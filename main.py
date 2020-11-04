@@ -55,6 +55,8 @@ def half(image):
 for file in os.listdir("assets"):
   globals()[file.split(".")[0]] = load(f"assets/{file}")
 
+saved = [load(f"circles/{i}.png") for i in range(101)]
+
 def display_menu():
   global size, width, height, font, font2
   basemenu = load("basemenu.JPG", width, 3*width//4)
@@ -174,18 +176,11 @@ async def lobby(websocket, data):
     await asyncio.sleep(0.03)
 
 async def customize(websocket):
-  global size, width, height
+  global size, width, height, saved
   display_menu()
   ctr = width//2, height//2
-  dr = 2
   lx = 50
-  for r in range(101):
-    for theta in range(360):
-      outputs = colorsys.hls_to_rgb(theta/360, 0.5, r/100)
-      for t in [theta, theta+0.25, theta+0.5, theta+0.75]:
-        fx = int(round(dr*r*math.cos(t*math.pi/180)+width//2))
-        fy = int(round(dr*r*math.sin(t*math.pi/180)+height//2))
-        screen.fill((int(round(outputs[0]*255)), int(round(outputs[1]*255)), int(round(outputs[2]*255))), ((fx, fy), (2, 2)))
+  screen.blit(saved[50], (width//2 - 200, height//2 - 200))
   pg.display.flip()
   
   while True:
@@ -199,13 +194,7 @@ async def customize(websocket):
           else: 
             if lx == 100: continue
           lx += [-1, 1][event.button == 5]
-          for r in range(101):
-            for theta in range(360):
-              outputs = colorsys.hls_to_rgb(theta/360, lx/100, r/100)
-              for t in [theta, theta+0.25, theta+0.5, theta+0.75]:
-                fx = int(round(dr*r*math.cos(t*math.pi/180)+width//2))
-                fy = int(round(dr*r*math.sin(t*math.pi/180)+height//2))
-                screen.fill((int(round(outputs[0]*255)), int(round(outputs[1]*255)), int(round(outputs[2]*255))), ((fx, fy), (2, 2)))
+          screen.blit(saved[lx], (width//2 - 200, height//2 - 200))
           pg.display.flip()
     await asyncio.sleep(0.03)
 

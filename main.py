@@ -177,25 +177,70 @@ async def lobby(websocket, data):
 
 async def customize(websocket):
   global size, width, height, saved
+  pg.mouse.set_cursor(*pg.cursors.arrow)
   display_menu()
-  ctr = width//2, height//2
   lx = 50
-  screen.blit(saved[50], (width//2 - 200, height//2 - 200))
+  mx = width//2
+  my = height//2
+  plate = saved[50].copy()
+  col = plate.get_at((mx-width//2+200, my-height//2+200))
+  for changex in range (-2, 3):
+    for changey in range(-2, 3):
+      coord = [mx-width//2+200+changex, my-height//2+200+changey]
+      try:
+        if plate.get_at(coord) != (0,0,0,0):
+          plate.fill((255, 255, 255), (coord, (1,1)))
+      except IndexError: pass
+  screen.blit(plate, (width//2 - 200, height//2 - 200))
+  del plate
+  textbox(height-80, width//2 - 280, text = f"R: {col[0]}, G: {col[1]}, B: {col[2]}")
+
   pg.display.flip()
-  
+  dragging = False
   while True:
     for event in pg.event.get():
       if event.type == QUIT: 
         sys.exit()
       elif event.type == MOUSEBUTTONUP:
+        dragging = False
         if event.button in [4, 5]:
           if event.button == 4: 
             if lx == 0: continue
           else: 
             if lx == 100: continue
           lx += [-1, 1][event.button == 5]
-          screen.blit(saved[lx], (width//2 - 200, height//2 - 200))
+          plate = saved[lx].copy()
+          col = plate.get_at((mx-width//2+200, my-height//2+200))
+          for changex in range (-2, 3):
+            for changey in range(-2, 3):
+              coord = [mx-width//2+200+changex, my-height//2+200+changey]
+              try:
+                if plate.get_at(coord) != (0,0,0,0):
+                  plate.fill((255, 255, 255), (coord, (1,1)))
+              except IndexError: pass
+          screen.blit(plate, (width//2 - 200, height//2 - 200))
+          del plate
+          textbox(height-80, width//2 - 280, text = f"R: {col[0]}, G: {col[1]}, B: {col[2]}")
           pg.display.flip()
+      elif event.type == MOUSEBUTTONDOWN:
+        dragging = True
+    tx, ty = pg.mouse.get_pos()
+    if dragging and (tx-width//2)**2 + (ty - height//2)**2 <= 40000:
+      mx, my = tx, ty
+      plate = saved[lx].copy()
+      col = plate.get_at((mx-width//2+200, my-height//2+200))
+      for changex in range (-2, 3):
+        for changey in range(-2, 3):
+          coord = [mx-width//2+200+changex, my-height//2+200+changey]
+          try:
+            if plate.get_at(coord) != (0,0,0,0):
+              plate.fill((255, 255, 255), (coord, (1,1)))
+          except IndexError: pass
+      screen.blit(plate, (width//2 - 200, height//2 - 200))
+      del plate
+      textbox(height-80, width//2 - 280, text = f"R: {col[0]}, G: {col[1]}, B: {col[2]}")
+      pg.display.flip()
+
     await asyncio.sleep(0.03)
 
 async def create_game(websocket, data):

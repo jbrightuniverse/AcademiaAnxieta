@@ -74,15 +74,18 @@ pheight = 150
 actualwidth = 1536
 actualheight = 801
 
-def pscale(player, x, y, col):
+def pscale(player, x, y, col, rgb = False):
   global size, width, height, actualwidth, actualheight
   dx = nmap(x, 0, actualwidth, 0, width)
   dy = nmap(y, 0, actualheight, 0, height)
   mx = nmap(pwidth, 0, actualwidth, 0, width)
   my = nmap(pheight, 0, actualheight, 0, height)
   pl = pg.transform.scale(player, (int(round(mx)), int(round(my))))
-  outputs = colorsys.hls_to_rgb(col[0]/360, col[2]/100, col[1]/100)
-  pl.fill((outputs[0]*255, outputs[1]*255, outputs[2]*255), special_flags=pg.BLEND_RGB_MULT)
+  if rgb:
+    pl.fill(col, special_flags=pg.BLEND_RGB_MULT)
+  else:
+    outputs = colorsys.hls_to_rgb(col[0]/360, col[2]/100, col[1]/100)
+    pl.fill((outputs[0]*255, outputs[1]*255, outputs[2]*255), special_flags=pg.BLEND_RGB_MULT)
   screen.blit(pl, (int(round(dx)), int(round(dy))))
 
 myusername = None
@@ -177,6 +180,7 @@ async def lobby(websocket, data):
 
 async def customize(websocket):
   global size, width, height, saved
+  player = load("player.png", pwidth, pheight)
   pg.mouse.set_cursor(*pg.cursors.arrow)
   display_menu()
   lx = 50
@@ -194,7 +198,8 @@ async def customize(websocket):
   screen.blit(plate, (width//2 - 200, height//2 - 200))
   del plate
   textbox(height-80, width//2 - 280, text = f"R: {col[0]}, G: {col[1]}, B: {col[2]}")
-
+  textbox(height-80, width//2 + 20, text = f"H: {int(round(col.hsla[0]))}, S: {int(round(col.hsla[1]))}%, L: {int(round(col.hsla[2]))}%")
+  pscale(player, 3*width//4, height//3, col, True)
   pg.display.flip()
   dragging = False
   while True:
@@ -221,6 +226,8 @@ async def customize(websocket):
           screen.blit(plate, (width//2 - 200, height//2 - 200))
           del plate
           textbox(height-80, width//2 - 280, text = f"R: {col[0]}, G: {col[1]}, B: {col[2]}")
+          textbox(height-80, width//2 + 20, text = f"H: {int(round(col.hsla[0]))}, S: {int(round(col.hsla[1]))}%, L: {int(round(col.hsla[2]))}%")
+          pscale(player, 3*width//4, height//3, col, True)
           pg.display.flip()
       elif event.type == MOUSEBUTTONDOWN:
         dragging = True
@@ -239,6 +246,8 @@ async def customize(websocket):
       screen.blit(plate, (width//2 - 200, height//2 - 200))
       del plate
       textbox(height-80, width//2 - 280, text = f"R: {col[0]}, G: {col[1]}, B: {col[2]}")
+      textbox(height-80, width//2 + 20, text = f"H: {int(round(col.hsla[0]))}, S: {int(round(col.hsla[1]))}%, L: {int(round(col.hsla[2]))}%")
+      pscale(player, 3*width//4, height//3, col, True)
       pg.display.flip()
 
     await asyncio.sleep(0.03)

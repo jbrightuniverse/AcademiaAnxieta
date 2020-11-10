@@ -78,8 +78,8 @@ def pscale(player, x, y, col, rgb = False):
   global size, width, height, actualwidth, actualheight
   dx = nmap(x, 0, actualwidth, 0, width)
   dy = nmap(y, 0, actualheight, 0, height)
-  mx = nmap(pwidth, 0, actualwidth, 0, width)
-  my = nmap(pheight, 0, actualheight, 0, height)
+  mx = nmap(player.get_width(), 0, actualwidth, 0, width)
+  my = nmap(player.get_height(), 0, actualheight, 0, height)
   pl = pg.transform.scale(player, (int(round(mx)), int(round(my))))
   if rgb:
     pl.fill(col, special_flags=pg.BLEND_RGB_MULT)
@@ -123,7 +123,7 @@ async def lobby(websocket, data):
     pscale(player, e["x"]-pwidth//2, e["y"]-pheight//2, (e["h"], e["s"], e["l"]))
     my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
     mx = nmap(e["x"], 0, actualwidth, 0, width)
-    rtext(thefont, entry, int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
+    rtext(thefont, pdict[entry]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
   pg.display.flip()
   
   while True:
@@ -174,19 +174,21 @@ async def lobby(websocket, data):
         pscale(result, e["x"]-pwidth//2, e["y"]-pheight//2, (e["h"], e["s"], e["l"]))
         my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
         mx = nmap(e["x"], 0, actualwidth, 0, width)
-        rtext(thefont, opt, int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
+        rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
       pg.display.flip()
     await asyncio.sleep(0.03)
 
-async def customize(websocket):
+async def customize(websocket, appearance):
   global size, width, height, saved
-  player = load("player.png", pwidth, pheight)
+  player = load("player.png", pwidth*2, pheight*2)
   pg.mouse.set_cursor(*pg.cursors.arrow)
   display_menu()
-  lx = 50
-  mx = width//2
-  my = height//2
-  plate = saved[50].copy()
+  [appearance["h"], appearance["s"], appearance["l"]]
+  lx = appearance["l"]
+  flip = True
+  mx = int(round(2*appearance["s"]*math.cos(appearance["h"]*math.pi/180)+ width//2))
+  my = int(round(2*appearance["s"]*math.sin(appearance["h"]*math.pi/180)+ height//2))
+  plate = saved[lx].copy()
   col = plate.get_at((mx-width//2+200, my-height//2+200))
   for changex in range (-2, 3):
     for changey in range(-2, 3):
@@ -199,9 +201,15 @@ async def customize(websocket):
   del plate
   textbox(height-80, width//2 - 280, text = f"R: {col[0]}, G: {col[1]}, B: {col[2]}")
   textbox(height-80, width//2 + 20, text = f"H: {int(round(col.hsla[0]))}, S: {int(round(col.hsla[1]))}%, L: {int(round(col.hsla[2]))}%")
+  textbox(height//3 - 100, 3*width//4, col = (114, 247, 247), text = appearance['nickname'])
   pscale(player, 3*width//4, height//3, col, True)
+  screen.blit(save, (width - 252, 2))
+  screen.blit(cancel, (width- 512, 2))
   pg.display.flip()
   dragging = False
+  nickname = appearance['nickname']
+  hsquare = -1
+
   while True:
     for event in pg.event.get():
       if event.type == QUIT: 
@@ -229,9 +237,61 @@ async def customize(websocket):
           textbox(height-80, width//2 + 20, text = f"H: {int(round(col.hsla[0]))}, S: {int(round(col.hsla[1]))}%, L: {int(round(col.hsla[2]))}%")
           pscale(player, 3*width//4, height//3, col, True)
           pg.display.flip()
+        if hsquare == 1:
+          return None
+
+        elif hsquare == 0:
+          plate = saved[lx].copy()
+          col = plate.get_at((mx-width//2+200, my-height//2+200))
+          await websocket.send(f"appear,{nickname},{int(round(col.hsla[0]))},{int(round(col.hsla[1]))},{int(round(col.hsla[2]))},{appearance['hat']},{appearance['suit']},{appearance['pet']},{appearance['faculty']}")
+          res = await websocket.recv()
+          if "[" not in res:
+            flip = 1 - flip
+            textbox(3*height//4 +77, x = 4, text = res, wdth = width-8, col = [(255, 255, 255), (255, 0, 0)][flip], textcol = (255, 0, 0))
+            pg.display.flip()
+          else:
+            return [nickname, int(round(col.hsla[0])), int(round(col.hsla[1])), int(round(col.hsla[2]))]
       elif event.type == MOUSEBUTTONDOWN:
         dragging = True
+      elif event.type == KEYDOWN:
+        if event.key == K_BACKSPACE:
+          nickname = nickname[:-1]
+          textbox(height//3 - 100, 3*width//4, col = (114, 247, 247), text = nickname)
+          pg.display.flip()
+        elif event.unicode not in ",{}[]|\\":
+          keys = pg.key.get_pressed()
+          if keys[K_RSHIFT] or keys[K_LSHIFT]:
+            nickname += event.unicode.upper()
+          else:
+            nickname += event.unicode
+          if font3.size(nickname)[0] > 258 or len(nickname) > 32:
+            nickname = nickname[:-1]
+          textbox(height//3 - 100, 3*width//4, col = (114, 247, 247), text = nickname)
+          pg.display.flip()
     tx, ty = pg.mouse.get_pos()
+    if intercept(tx, ty, width-252, 2, 250, 71):
+      if hsquare != 0:
+        hsquare = 0
+        pg.mouse.set_cursor(*pg.cursors.diamond)
+        screen.blit(save2, (width - 252, 2))
+        screen.blit(cancel, (width- 512, 2))
+        pg.display.flip()
+
+    elif intercept(tx, ty, width-512, 2, 250, 71):
+      if hsquare != 1:
+        hsquare = 1
+        pg.mouse.set_cursor(*pg.cursors.diamond)
+        screen.blit(save, (width - 252, 2))
+        screen.blit(cancel2, (width- 512, 2))
+        pg.display.flip()
+
+    elif hsquare != -1:
+      hsquare = -1
+      screen.blit(save, (width - 252, 2))
+      screen.blit(cancel, (width- 512, 2))
+      pg.mouse.set_cursor(*pg.cursors.arrow)
+      pg.display.flip()
+
     if dragging and (tx-width//2)**2 + (ty - height//2)**2 <= 40000:
       mx, my = tx, ty
       plate = saved[lx].copy()
@@ -477,7 +537,7 @@ async def prompt(websocket, confirm):
           else:
             myusername = inputs[0]
             pg.mouse.set_cursor(*pg.cursors.arrow)
-            return inputs + json.loads(res)
+            return [inputs] + json.loads(res)
       if event.type == KEYDOWN:
         if event.key in [K_RETURN, K_TAB]:
           if cur > 0:
@@ -593,13 +653,17 @@ def mainmenuicons():
 def intercept(x, y, x2, y2, w = 447, h = 47):
   return x in range(x2, x2+w) and y in range(y2, y2+h)
 
-async def mainmenu(websocket, data):
+async def mainmenu(websocket, inputs):
   global screen, size, width, height
   display_menu()
   mainmenuicons()
-
+  data = inputs[0]
+  appearance = inputs[2][1]
   textbox(3*height//8+5, 3*width//5, col = (114, 247, 247), text = "Enter Code", textcol = (0, 200, 200))
-  rtext(font2, f"Hi {data[0]}", 105, color = (66, 245, 245))
+  rtext(font2, f"Hi {appearance['nickname']} ({data[0]})", 105, color = (66, 245, 245))
+  player = load("player.png", pwidth*2, pheight*2)
+  pscale(player, 3*width//4, height//2, [appearance["h"], appearance["s"], appearance["l"]])
+  #{'nickname': 'James', 'username': 'James', 'h': 189, 's': 100, 'l': 50, 'x': 590, 'y': 446, 'hat': 0, 'suit': 0, 'pet': 0, 'faculty': 0}
   pg.display.flip()
 
   cur = 1
@@ -713,8 +777,19 @@ async def mainmenu(websocket, data):
           return rs
 
         elif hsquare == 7:
-          rs = await customize(websocket)
-          return rs
+          rs = await customize(websocket, appearance)
+          if rs:
+            appearance["nickname"] = rs[0]
+            appearance["h"] = rs[1]
+            appearance["s"] = rs[2]
+            appearance["l"] = rs[3]
+          display_menu()
+          mainmenuicons()
+          textbox(3*height//8+5, 3*width//5, col = (114, 247, 247), text = "Enter Code", textcol = (0, 200, 200))
+          rtext(font2, f"Hi {appearance['nickname']} ({data[0]})", 105, color = (66, 245, 245))
+          player = load("player.png", pwidth*2, pheight*2)
+          pscale(player, 3*width//4, height//2, [appearance["h"], appearance["s"], appearance["l"]])
+          pg.display.flip()
 
       if event.type == KEYDOWN:
         if event.key == K_BACKSPACE:

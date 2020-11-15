@@ -1,3 +1,5 @@
+# test map: Map data © OpenStreetMap contributors; openstreetmap.org
+
 import asyncio
 import colorsys
 import json
@@ -90,7 +92,108 @@ def pscale(player, x, y, col, rgb = False):
 
 myusername = None
 
-async def lobby(websocket, data):
+mainmap = load("maps/ubc.png")
+
+async def play(websocket, pdict, is_owner):
+  global screen, size, width, height, myusername, actualwidth, actualheight
+  # remember to send notif to new owner that they are the owner
+
+  await websocket.send("start")
+  res = await websocket.recv()
+  for entry in json.loads(res):
+    # handle the player change appearance thing later
+    if entry[0] == "Players":
+      for player in entry[1]:
+        for key in entry[1][player]:
+          pdict[player][key] = entry[1][player][key]
+  
+  offsetx = pdict[myusername]["x"] - width//2
+  offsety = pdict[myusername]["y"] - height//2
+
+  screen.fill((0,0,0))
+  screen.blit(mainmap, (0,0), pg.Rect(offsetx, offsety, width, height))
+
+  player = load("player.png", pwidth, pheight)
+  reverseplayer = pg.transform.flip(player, True, False)
+  pwalking = load("playerwalking.png", pwidth, pheight)
+  reversepwalking = pg.transform.flip(pwalking, True, False)
+
+  fsize = nmap(40, 0, actualwidth, 0, width)
+  thefont = pg.font.Font("OpenSansEmoji.ttf", int(round(fsize)))
+  for entry in pdict:
+    e = pdict[entry]
+    e["f"] = 0
+    e["f2"] = 0
+    if e["x"] in range(offsetx, offsetx + width) and e["y"] in range(offsety, offsety + height):
+      pscale(player, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]))
+      my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
+      mx = nmap(e["x"], 0, actualwidth, 0, width)
+      rtext(thefont, e["nickname"], int(round(my - offsety)), int(round(mx - offsetx)), color = (128,128,128), ctr = True)
+  pg.display.flip()
+  
+  while True:
+    flag = False
+    keys = pg.key.get_pressed()
+    spacestate = 0
+    for event in pg.event.get():
+      if event.type == QUIT: 
+        sys.exit()
+      elif event.type == VIDEORESIZE:
+        size = width, height = (event.w, event.h)
+        screen = pg.display.set_mode(size, pg.RESIZABLE)
+        flag = True
+        pg.display.flip()
+      elif event.type == KEYDOWN and event.key == K_SPACE:
+        spacestate = 1
+    if keys[K_RETURN] and is_owner:
+      await websocket.send("finish")
+      res = await websocket.recv()
+      return res
+    if keys[K_ESCAPE]:
+      await websocket.send("leave")
+      await websocket.recv()
+      break
+    await websocket.send(f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}")
+    jsondata = await websocket.recv()
+    data = json.loads(jsondata)
+    for entry in data:
+      if entry[0] == "Players":
+        if not flag:
+          flag = True
+        for opt in entry[1]:
+          if opt not in pdict: 
+            pdict[opt] = entry[1][opt]
+            pdict[opt]["f"] = 0
+            pdict[opt]["f2"] = 0
+          else:
+            pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
+            pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+            for field in entry[1][opt]:
+              pdict[opt][field] = entry[1][opt][field]
+      elif entry[0] == "Left":
+        del pdict[entry[1]]
+        flag = True
+        print(f"{entry[1]} left the game.")
+    if flag:
+      offsetx = pdict[myusername]["x"] - width//2
+      offsety = pdict[myusername]["y"] - height//2
+
+      screen.fill((0,0,0))
+      screen.blit(mainmap, (0,0), pg.Rect(offsetx, offsety, width, height))
+
+      for opt in pdict:
+        e = pdict[opt]
+        if e["x"] in range(offsetx, offsetx + width) and e["y"] in range(offsety, offsety + height):
+          result = [[reverseplayer, player], [reversepwalking, pwalking]][e["f2"]][e["f"]]
+          pscale(result, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]))
+          my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
+          mx = nmap(e["x"], 0, actualwidth, 0, width)
+          rtext(thefont, pdict[opt]["nickname"], int(round(my - offsetx)), int(round(mx - offsety)), color = (128,128,128), ctr = True)
+      pg.display.flip()
+    await asyncio.sleep(0.03)
+      
+
+async def lobby(websocket, data, is_owner):
   global screen, size, width, height, myusername, actualwidth, actualheight
   radius = int(math.ceil(math.sqrt((width//2)**2 + (height//2)**2)))
   if "[" not in data:
@@ -141,6 +244,23 @@ async def lobby(websocket, data):
         pg.display.flip()
       elif event.type == KEYDOWN and event.key == K_SPACE:
         spacestate = 1
+    if keys[K_RETURN] and is_owner:
+      result = await play(websocket, pdict, is_owner)
+      for entry in json.loads(result):
+        if entry[0] == "Players":
+          if not flag:
+            flag = True
+          for opt in entry[1]:
+            if opt not in pdict: 
+              pdict[opt] = entry[1][opt]
+              pdict[opt]["f"] = 0
+              pdict[opt]["f2"] = 0
+            else:
+              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
+              pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+              for field in entry[1][opt]:
+                pdict[opt][field] = entry[1][opt][field]
+
     if keys[K_ESCAPE]:
       await websocket.send("leave")
       await websocket.recv()
@@ -388,7 +508,7 @@ async def create_game(websocket, data):
             for i in range(radius, 0, -1):
               pg.draw.circle(screen, (0,0,0), (width//2, height//2), i, 1)
               pg.display.flip()
-            await lobby(websocket, res)
+            await lobby(websocket, res, True)
             return
             
       elif event.type == KEYDOWN:
@@ -759,7 +879,7 @@ async def mainmenu(websocket, inputs):
             for i in range(radius, 0, -1):
               pg.draw.circle(screen, (0,0,0), (width//2, height//2), i, 1)
               pg.display.flip()
-            await lobby(websocket, res)
+            await lobby(websocket, res, False)
             return True
 
         elif hsquare == 5:

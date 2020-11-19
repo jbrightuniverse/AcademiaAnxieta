@@ -96,7 +96,6 @@ mainmap = load("maps/ubc.png")
 
 async def play(websocket, pdict, is_owner):
   global screen, size, width, height, myusername, actualwidth, actualheight
-  # remember to send notif to new owner that they are the owner
 
   await websocket.send("start")
   res = await websocket.recv()
@@ -106,6 +105,8 @@ async def play(websocket, pdict, is_owner):
       for player in entry[1]:
         for key in entry[1][player]:
           pdict[player][key] = entry[1][player][key]
+    elif entry[0] == "Owner":
+      is_owner = True
   
   offsetx = pdict[myusername]["x"] - width//2
   offsety = pdict[myusername]["y"] - height//2
@@ -148,7 +149,7 @@ async def play(websocket, pdict, is_owner):
     if keys[K_RETURN] and is_owner:
       await websocket.send("finish")
       res = await websocket.recv()
-      return res
+      return [res, is_owner]
     if keys[K_ESCAPE]:
       await websocket.send("leave")
       await websocket.recv()
@@ -156,8 +157,13 @@ async def play(websocket, pdict, is_owner):
     await websocket.send(f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}")
     jsondata = await websocket.recv()
     data = json.loads(jsondata)
+    handle_after = False
     for entry in data:
-      if entry[0] == "Players":
+      if entry[0] == "Map":
+        handle_after = True
+      elif entry[0] == "Owner":
+        is_owner = True
+      elif entry[0] == "Players":
         if not flag:
           flag = True
         for opt in entry[1]:
@@ -174,6 +180,9 @@ async def play(websocket, pdict, is_owner):
         del pdict[entry[1]]
         flag = True
         print(f"{entry[1]} left the game.")
+    if handle_after:
+      return [[], is_owner]
+
     if flag:
       offsetx = pdict[myusername]["x"] - width//2
       offsety = pdict[myusername]["y"] - height//2
@@ -202,6 +211,11 @@ async def lobby(websocket, data, is_owner):
     await websocket.recv()
     return
   data = json.loads(data)
+  for i in range(len(data)):
+    if data[i][0] == "Owner":
+      is_owner = True
+      del data[i]
+      break
   game = data[0][1]
   players = data[1][1]
   blounge = load("lounge_temp.png", width, height)
@@ -246,7 +260,7 @@ async def lobby(websocket, data, is_owner):
         spacestate = 1
     if keys[K_RETURN] and is_owner:
       result = await play(websocket, pdict, is_owner)
-      for entry in json.loads(result):
+      for entry in json.loads(result[0]):
         if entry[0] == "Players":
           if not flag:
             flag = True
@@ -260,6 +274,10 @@ async def lobby(websocket, data, is_owner):
               pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
               for field in entry[1][opt]:
                 pdict[opt][field] = entry[1][opt][field]
+        elif entry[0] == "Left":
+          del pdict[entry[1]]
+          flag = True
+          print(f"{entry[1]} left the game.")
 
     if keys[K_ESCAPE]:
       await websocket.send("leave")
@@ -268,8 +286,14 @@ async def lobby(websocket, data, is_owner):
     await websocket.send(f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}")
     jsondata = await websocket.recv()
     data = json.loads(jsondata)
+    handle_after = False
     for entry in data:
-      if entry[0] == "Players":
+      if entry[0] == "Owner":
+        is_owner = True
+      elif entry[0] == "Map":
+        handle_after = True
+        
+      elif entry[0] == "Players":
         if not flag:
           flag = True
         for opt in entry[1]:
@@ -286,6 +310,30 @@ async def lobby(websocket, data, is_owner):
         del pdict[entry[1]]
         flag = True
         print(f"{entry[1]} left the game.")
+    if handle_after:
+      result = await play(websocket, pdict, is_owner)
+      is_owner = result[1]
+      for entry in json.loads(result[0]):
+        if entry[0] == "Owner":
+          is_owner = True
+        elif entry[0] == "Players":
+          if not flag:
+            flag = True
+          for opt in entry[1]:
+            if opt not in pdict: 
+              pdict[opt] = entry[1][opt]
+              pdict[opt]["f"] = 0
+              pdict[opt]["f2"] = 0
+            else:
+              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
+              pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+              for field in entry[1][opt]:
+                pdict[opt][field] = entry[1][opt][field]
+        elif entry[0] == "Left":
+          del pdict[entry[1]]
+          flag = True
+          print(f"{entry[1]} left the game.")
+
     if flag:
       screen.blit(blounge, (0, 0))
       for opt in pdict:

@@ -127,9 +127,9 @@ async def play(websocket, pdict, is_owner):
     e["f2"] = 0
     if e["x"] in range(offsetx, offsetx + width) and e["y"] in range(offsety, offsety + height):
       pscale(player, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]))
-      my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
-      mx = nmap(e["x"], 0, actualwidth, 0, width)
-      rtext(thefont, e["nickname"], int(round(my - offsety)), int(round(mx - offsetx)), color = (128,128,128), ctr = True)
+      my = nmap(e["y"]-50-pheight//2 - offsety, 0, actualheight, 0, height)
+      mx = nmap(e["x"] - offsetx, 0, actualwidth, 0, width)
+      rtext(thefont, e["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
   pg.display.flip()
   
   while True:
@@ -195,9 +195,9 @@ async def play(websocket, pdict, is_owner):
         if e["x"] in range(offsetx, offsetx + width) and e["y"] in range(offsety, offsety + height):
           result = [[reverseplayer, player], [reversepwalking, pwalking]][e["f2"]][e["f"]]
           pscale(result, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]))
-          my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
-          mx = nmap(e["x"], 0, actualwidth, 0, width)
-          rtext(thefont, pdict[opt]["nickname"], int(round(my - offsetx)), int(round(mx - offsety)), color = (128,128,128), ctr = True)
+          my = nmap(e["y"]-50-pheight//2 - offsety, 0, actualheight, 0, height)
+          mx = nmap(e["x"] - offsetx, 0, actualwidth, 0, width)
+          rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
       pg.display.flip()
     await asyncio.sleep(0.03)
       

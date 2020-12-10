@@ -76,13 +76,13 @@ pheight = 150
 actualwidth = 1536
 actualheight = 801
 
-def pscale(player, x, y, col, rgb = False):
+def pscale(player, x, y, col, rgb = False, half = 1):
   global size, width, height, actualwidth, actualheight
   dx = nmap(x, 0, actualwidth, 0, width)
   dy = nmap(y, 0, actualheight, 0, height)
   mx = nmap(player.get_width(), 0, actualwidth, 0, width)
   my = nmap(player.get_height(), 0, actualheight, 0, height)
-  pl = pg.transform.scale(player, (int(round(mx)), int(round(my))))
+  pl = pg.transform.scale(player, (int(round(mx)/half), int(round(my)/half)))
   if rgb:
     pl.fill(col, special_flags=pg.BLEND_RGB_MULT)
   else:
@@ -116,8 +116,10 @@ async def play(websocket, pdict, is_owner):
 
   player = load("player.png", pwidth, pheight)
   reverseplayer = pg.transform.flip(player, True, False)
-  pwalking = load("playerwalking.png", pwidth, pheight)
+  pwalking = load("playerwalkingfront.png", pwidth, pheight)
   reversepwalking = pg.transform.flip(pwalking, True, False)
+  pwalkingb = load("playerwalkingback.png", pwidth, pheight)
+  reversepwalkingb = pg.transform.flip(pwalkingb, True, False)
 
   fsize = nmap(40, 0, actualwidth, 0, width)
   thefont = pg.font.Font("OpenSansEmoji.ttf", int(round(fsize)))
@@ -126,12 +128,12 @@ async def play(websocket, pdict, is_owner):
     e["f"] = 0
     e["f2"] = 0
     if e["x"] in range(offsetx, offsetx + width) and e["y"] in range(offsety, offsety + height):
-      pscale(player, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]))
+      pscale(player, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]), half = 2)
       my = nmap(e["y"]-50-pheight//2 - offsety, 0, actualheight, 0, height)
       mx = nmap(e["x"] - offsetx, 0, actualwidth, 0, width)
       rtext(thefont, e["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
   pg.display.flip()
-  
+  whichleg = True
   while True:
     flag = False
     keys = pg.key.get_pressed()
@@ -174,6 +176,8 @@ async def play(websocket, pdict, is_owner):
           else:
             pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
             pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+            if pdict[opt]["f2"] % 2 == 1:
+              whichleg = not whichleg
             for field in entry[1][opt]:
               pdict[opt][field] = entry[1][opt][field]
       elif entry[0] == "Left":
@@ -193,13 +197,16 @@ async def play(websocket, pdict, is_owner):
       for opt in pdict:
         e = pdict[opt]
         if e["x"] in range(offsetx, offsetx + width) and e["y"] in range(offsety, offsety + height):
-          result = [[reverseplayer, player], [reversepwalking, pwalking]][e["f2"]][e["f"]]
-          pscale(result, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]))
+          if e["f2"] > 0:
+            todo = 1+whichleg
+          else: todo = 0
+          result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
+          pscale(result, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]), half = 2)
           my = nmap(e["y"]-50-pheight//2 - offsety, 0, actualheight, 0, height)
           mx = nmap(e["x"] - offsetx, 0, actualwidth, 0, width)
           rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
       pg.display.flip()
-    await asyncio.sleep(0.03)
+    await asyncio.sleep(0.07)
       
 
 async def lobby(websocket, data, is_owner):
@@ -226,8 +233,10 @@ async def lobby(websocket, data, is_owner):
 
   player = load("player.png", pwidth, pheight)
   reverseplayer = pg.transform.flip(player, True, False)
-  pwalking = load("playerwalking.png", pwidth, pheight)
+  pwalking = load("playerwalkingfront.png", pwidth, pheight)
   reversepwalking = pg.transform.flip(pwalking, True, False)
+  pwalkingb = load("playerwalkingback.png", pwidth, pheight)
+  reversepwalkingb = pg.transform.flip(pwalkingb, True, False)
 
   pdict = {}
   fsize = nmap(40, 0, actualwidth, 0, width)
@@ -242,7 +251,7 @@ async def lobby(websocket, data, is_owner):
     mx = nmap(e["x"], 0, actualwidth, 0, width)
     rtext(thefont, pdict[entry]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
   pg.display.flip()
-  
+  whichleg = True
   while True:
     flag = False
     keys = pg.key.get_pressed()
@@ -272,6 +281,8 @@ async def lobby(websocket, data, is_owner):
             else:
               pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
               pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+              if pdict[opt]["f2"] % 2 == 1:
+                whichleg = not whichleg
               for field in entry[1][opt]:
                 pdict[opt][field] = entry[1][opt][field]
         elif entry[0] == "Left":
@@ -304,6 +315,8 @@ async def lobby(websocket, data, is_owner):
           else:
             pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
             pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+            if pdict[opt]["f2"] % 2 == 1:
+              whichleg = not whichleg
             for field in entry[1][opt]:
               pdict[opt][field] = entry[1][opt][field]
       elif entry[0] == "Left":
@@ -327,6 +340,8 @@ async def lobby(websocket, data, is_owner):
             else:
               pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
               pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+              if pdict[opt]["f2"] % 2 == 1:
+                whichleg = not whichleg
               for field in entry[1][opt]:
                 pdict[opt][field] = entry[1][opt][field]
         elif entry[0] == "Left":
@@ -338,13 +353,18 @@ async def lobby(websocket, data, is_owner):
       screen.blit(blounge, (0, 0))
       for opt in pdict:
         e = pdict[opt]
-        result = [[reverseplayer, player], [reversepwalking, pwalking]][e["f2"]][e["f"]]
+        if e["f2"] == 1:
+          todo = 1+whichleg
+        else:
+          todo = 0
+
+        result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
         pscale(result, e["x"]-pwidth//2, e["y"]-pheight//2, (e["h"], e["s"], e["l"]))
         my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
         mx = nmap(e["x"], 0, actualwidth, 0, width)
         rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
       pg.display.flip()
-    await asyncio.sleep(0.03)
+    await asyncio.sleep(0.07)
 
 async def customize(websocket, appearance):
   global size, width, height, saved

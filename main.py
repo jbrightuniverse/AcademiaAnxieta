@@ -45,10 +45,15 @@ def textbox(y, x = "default", text = "", col = (255, 255, 255), wdth = 260, text
   if text:
     rtext(font3, text, y, x+5, color = textcol)
 
-def load(image, x = -1, y = -1):
+def load(image, x = -1, y = -1, bound = False):
   img = pg.image.load(image).convert_alpha()
   if x != -1:
     img = pg.transform.scale(img, (x, y))
+  if bound:
+    baseline = pg.Surface((5494, 6106))
+    baseline.fill((0,0,0))
+    baseline.blit(img, (100, 100))
+    return baseline
   return img
 
 def half(image):
@@ -73,16 +78,21 @@ def nmap(val, omin, omax, rmin, rmax):
 pwidth = 100
 pheight = 150
 
+MS = 3
+
+pwidth2 = 16*MS
+pheight2 = 25*MS
+
 actualwidth = 1536
 actualheight = 801
 
-def pscale(player, x, y, col, rgb = False, half = 1):
+def pscale(player, x, y, col, rgb = False):
   global size, width, height, actualwidth, actualheight
   dx = nmap(x, 0, actualwidth, 0, width)
   dy = nmap(y, 0, actualheight, 0, height)
   mx = nmap(player.get_width(), 0, actualwidth, 0, width)
   my = nmap(player.get_height(), 0, actualheight, 0, height)
-  pl = pg.transform.scale(player, (int(round(mx)/half), int(round(my)/half)))
+  pl = pg.transform.scale(player, (int(round(mx)), int(round(my))))
   if rgb:
     pl.fill(col, special_flags=pg.BLEND_RGB_MULT)
   else:
@@ -92,7 +102,8 @@ def pscale(player, x, y, col, rgb = False, half = 1):
 
 myusername = None
 
-mainmap = load("maps/ubc.png")
+
+mainmap = pg.transform.scale(load("maps/ubc.png", bound = True), (5494, 6106))
 
 async def play(websocket, pdict, is_owner):
   global screen, size, width, height, myusername, actualwidth, actualheight
@@ -108,17 +119,22 @@ async def play(websocket, pdict, is_owner):
     elif entry[0] == "Owner":
       is_owner = True
   
-  offsetx = pdict[myusername]["x"] - width//2
-  offsety = pdict[myusername]["y"] - height//2
+  offsetx = (pdict[myusername]["x"]*MS - width//2)
+  offsety = (pdict[myusername]["y"]*MS - height//2)
+  ox = (pdict[myusername]["x"] - width//2)
+  oy = (pdict[myusername]["y"] - height//2)
 
   screen.fill((0,0,0))
-  screen.blit(mainmap, (0,0), pg.Rect(offsetx, offsety, width, height))
+  temp = pg.Surface((width, height))
+  temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
+  temp = pg.transform.scale(temp, (width*MS, height*MS))
+  screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
-  player = load("player.png", pwidth, pheight)
+  player = load("player.png", pwidth2, pheight2)
   reverseplayer = pg.transform.flip(player, True, False)
-  pwalking = load("playerwalkingfront.png", pwidth, pheight)
+  pwalking = load("playerwalkingfront.png", pwidth2, pheight2)
   reversepwalking = pg.transform.flip(pwalking, True, False)
-  pwalkingb = load("playerwalkingback.png", pwidth, pheight)
+  pwalkingb = load("playerwalkingback.png", pwidth2, pheight2)
   reversepwalkingb = pg.transform.flip(pwalkingb, True, False)
 
   fsize = nmap(40, 0, actualwidth, 0, width)
@@ -127,10 +143,10 @@ async def play(websocket, pdict, is_owner):
     e = pdict[entry]
     e["f"] = 0
     e["f2"] = 0
-    if e["x"] in range(offsetx, offsetx + width) and e["y"] in range(offsety, offsety + height):
-      pscale(player, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]), half = 2)
-      my = nmap(e["y"]-50-pheight//2 - offsety, 0, actualheight, 0, height)
-      mx = nmap(e["x"] - offsetx, 0, actualwidth, 0, width)
+    if e["x"]*MS in range(offsetx, offsetx + width) and e["y"]*MS in range(offsety, offsety + height):
+      pscale(player, e["x"]*MS-pwidth2//2 - offsetx, e["y"]*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]))
+      my = nmap(e["y"]*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
+      mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
       rtext(thefont, e["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
   pg.display.flip()
   whichleg = True
@@ -188,22 +204,28 @@ async def play(websocket, pdict, is_owner):
       return [[], is_owner]
 
     if flag:
-      offsetx = pdict[myusername]["x"] - width//2
-      offsety = pdict[myusername]["y"] - height//2
+      offsetx = (pdict[myusername]["x"]*MS - width//2)
+      offsety = (pdict[myusername]["y"]*MS - height//2)
+
+      ox = (pdict[myusername]["x"] - width//2)
+      oy = (pdict[myusername]["y"] - height//2)
 
       screen.fill((0,0,0))
-      screen.blit(mainmap, (0,0), pg.Rect(offsetx, offsety, width, height))
+      temp = pg.Surface((width, height))
+      temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
+      temp = pg.transform.scale(temp, (width*MS, height*MS))
+      screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
       for opt in pdict:
         e = pdict[opt]
-        if e["x"] in range(offsetx, offsetx + width) and e["y"] in range(offsety, offsety + height):
+        if e["x"]*MS in range(offsetx, offsetx + width) and e["y"]*MS in range(offsety, offsety + height):
           if e["f2"] > 0:
             todo = 1+whichleg
           else: todo = 0
           result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
-          pscale(result, e["x"]-pwidth//2 - offsetx, e["y"]-pheight//2 - offsety, (e["h"], e["s"], e["l"]), half = 2)
-          my = nmap(e["y"]-50-pheight//2 - offsety, 0, actualheight, 0, height)
-          mx = nmap(e["x"] - offsetx, 0, actualwidth, 0, width)
+          pscale(result, e["x"]*MS-pwidth2//2 - offsetx, e["y"]*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]))
+          my = nmap(e["y"]*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
+          mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
           rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
       pg.display.flip()
     await asyncio.sleep(0.07)

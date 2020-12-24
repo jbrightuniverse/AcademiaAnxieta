@@ -15,6 +15,7 @@ import traceback
 import numpy as np
 
 pg.init()
+pg.display.set_caption("Academia")
 
 font = pg.font.Font("OpenSansEmoji.ttf", 70)
 font2 = pg.font.Font("OpenSansEmoji.ttf", 30)
@@ -22,6 +23,9 @@ font3 = pg.font.Font("OpenSansEmoji.ttf", 20)
 
 size = width, height = 1536, 801
 screen = pg.display.set_mode(size, pg.RESIZABLE)
+toshow = pg.image.load("sprites/book.png").convert_alpha()
+pg.display.set_icon(toshow)
+
 
 def rtext(font, text, y, x = "center", color = (255, 255, 255), d = True, ctr = False):
   global screen, size, width, height
@@ -34,6 +38,9 @@ def rtext(font, text, y, x = "center", color = (255, 255, 255), d = True, ctr = 
   if d:
     screen.blit(font.render(text, True, (0,0,0)), (x-2, y+2))
   screen.blit(font.render(text, True, color), (x, y))
+
+rtext(font, "Loading...", height//2 - 35)
+pg.display.flip()
 
 def textbox(y, x = "default", text = "", col = (255, 255, 255), wdth = 260, textcol = (255, 255, 255)):
   global screen, width, height, font, font2
@@ -50,8 +57,8 @@ def load(image, x = -1, y = -1, bound = False):
   if x != -1:
     img = pg.transform.scale(img, (x, y))
   if bound:
-    baseline = pg.Surface((5494, 6106))
-    baseline.fill((0,0,0))
+    baseline = pg.Surface((5494, 6106), pg.SRCALPHA)
+    baseline.fill((0,0,0,0))
     baseline.blit(img, (100, 100))
     return baseline
   return img
@@ -102,8 +109,17 @@ def pscale(player, x, y, col, rgb = False):
 
 myusername = None
 
+from taskmod import *
 
-mainmap = pg.transform.scale(load("maps/ubc.png", bound = True), (5494, 6106))
+tasks = []
+for i in range(256):
+  if i == 128:
+    tasks.append(load(f"maps/tasks/{i}.png", bound = True))
+  else: tasks.append(None)
+
+mainmap = load("maps/ubc.png", bound = True)
+prime = taskbase(actualwidth, actualheight)
+
 
 async def play(websocket, pdict, is_owner):
   global screen, size, width, height, myusername, actualwidth, actualheight
@@ -148,8 +164,20 @@ async def play(websocket, pdict, is_owner):
       my = nmap(e["y"]*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
       mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
       rtext(thefont, e["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
+
   pg.display.flip()
   whichleg = True
+  task = 255
+  doing_task = False
+  completed = [0, 255]
+
+  base = time.time()
+  relevant_entries = None
+
+  is_hover = -1
+  dmx, dmy = pg.mouse.get_pos()
+  clicked = False
+
   while True:
     flag = False
     keys = pg.key.get_pressed()
@@ -164,7 +192,7 @@ async def play(websocket, pdict, is_owner):
         pg.display.flip()
       elif event.type == KEYDOWN and event.key == K_SPACE:
         spacestate = 1
-    if keys[K_RETURN] and is_owner:
+    if keys[K_RSHIFT] and is_owner:
       await websocket.send("finish")
       res = await websocket.recv()
       return [res, is_owner]
@@ -172,63 +200,110 @@ async def play(websocket, pdict, is_owner):
       await websocket.send("leave")
       await websocket.recv()
       break
-    await websocket.send(f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}")
-    jsondata = await websocket.recv()
-    data = json.loads(jsondata)
-    handle_after = False
-    for entry in data:
-      if entry[0] == "Map":
-        handle_after = True
-      elif entry[0] == "Owner":
-        is_owner = True
-      elif entry[0] == "Players":
-        if not flag:
-          flag = True
-        for opt in entry[1]:
-          if opt not in pdict: 
-            pdict[opt] = entry[1][opt]
-            pdict[opt]["f"] = 0
-            pdict[opt]["f2"] = 0
-          else:
-            pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
-            pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
-            if pdict[opt]["f2"] % 2 == 1:
-              whichleg = not whichleg
-            for field in entry[1][opt]:
-              pdict[opt][field] = entry[1][opt][field]
-      elif entry[0] == "Left":
-        del pdict[entry[1]]
+    if doing_task:
+      mpx, mpy = pg.mouse.get_pos()
+      def collide(x, y):
+        return x >= 3*actualwidth//4 - 32 and x <= 3*actualwidth//4 and y >= actualheight//2-actualwidth//4 and y <= actualheight//2-actualwidth//4 + 32
+      
+      if keys[K_DOWN] or keys[K_UP] or keys[K_LEFT] or keys[K_RIGHT]:
+        is_hover = -1
+        clicked = False
         flag = True
-        print(f"{entry[1]} left the game.")
-    if handle_after:
-      return [[], is_owner]
+        relevant_entries = None
+        doing_task = False
+      else:
+        is_hover, clicked, dmx, dmy, update_render, finished = await globals()[inputs[task]](relevant_entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked)
+        if finished:
+          is_hover = -1
+          clicked = False
+          flag = True
+          relevant_entries = None
+          doing_task = False
+          completed.append(task)
+        elif update_render:
+          flag = True
 
-    if flag:
-      offsetx = (pdict[myusername]["x"]*MS - width//2)
-      offsety = (pdict[myusername]["y"]*MS - height//2)
+    if spacestate and task not in completed and not doing_task:
+      doing_task = True
+      relevant_entries = await globals()[prep[task]](screen, actualwidth, actualheight)
+      flag = True
 
-      ox = (pdict[myusername]["x"] - width//2)
-      oy = (pdict[myusername]["y"] - height//2)
+    if time.time() - base >= 0.07 or flag:
+      if time.time() - base >= 0.07:
+        if doing_task: payload = f"move,0,0,0,0,0"
+        else: payload = f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}"
+        await websocket.send(payload)
+        jsondata = await websocket.recv()
+        data = json.loads(jsondata)
+        handle_after = False
+        for entry in data:
+          if entry[0] == "Map":
+            handle_after = True
+          elif entry[0] == "Owner":
+            is_owner = True
+          elif entry[0] == "Task":
+            task = entry[1]
+          elif entry[0] == "Players":
+            if not flag:
+              flag = True
+            for opt in entry[1]:
+              if opt not in pdict: 
+                pdict[opt] = entry[1][opt]
+                pdict[opt]["f"] = 0
+                pdict[opt]["f2"] = 0
+              else:
+                pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
+                pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+                if pdict[opt]["f2"] % 2 == 1:
+                  whichleg = not whichleg
+                for field in entry[1][opt]:
+                  pdict[opt][field] = entry[1][opt][field]
+          elif entry[0] == "Left":
+            del pdict[entry[1]]
+            flag = True
+            print(f"{entry[1]} left the game.")
+        if handle_after:
+          return [[], is_owner]
+        
+        base = time.time()
 
-      screen.fill((0,0,0))
-      temp = pg.Surface((width, height))
-      temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
-      temp = pg.transform.scale(temp, (width*MS, height*MS))
-      screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
+      if flag:
+        offsetx = (pdict[myusername]["x"]*MS - width//2)
+        offsety = (pdict[myusername]["y"]*MS - height//2)
 
-      for opt in pdict:
-        e = pdict[opt]
-        if e["x"]*MS in range(offsetx, offsetx + width) and e["y"]*MS in range(offsety, offsety + height):
-          if e["f2"] > 0:
-            todo = 1+whichleg
-          else: todo = 0
-          result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
-          pscale(result, e["x"]*MS-pwidth2//2 - offsetx, e["y"]*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]))
-          my = nmap(e["y"]*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
-          mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
-          rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
-      pg.display.flip()
-    await asyncio.sleep(0.07)
+        ox = (pdict[myusername]["x"] - width//2)
+        oy = (pdict[myusername]["y"] - height//2)
+
+        screen.fill((0,0,0))
+        temp = pg.Surface((width, height))
+        temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
+        temp = pg.transform.scale(temp, (width*MS, height*MS))
+        screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
+
+        if task not in completed:
+          overmap = tasks[task]
+          temp = pg.Surface((width, height), pg.SRCALPHA)
+          temp.blit(overmap, (0,0), pg.Rect(ox, oy, width, height))
+          temp = pg.transform.scale(temp, (width*MS, height*MS))
+          screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
+
+        for opt in pdict:
+          e = pdict[opt]
+          if e["x"]*MS in range(offsetx, offsetx + width) and e["y"]*MS in range(offsety, offsety + height):
+            if e["f2"] > 0:
+              todo = 1+whichleg
+            else: todo = 0
+            result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
+            pscale(result, e["x"]*MS-pwidth2//2 - offsetx, e["y"]*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]))
+            my = nmap(e["y"]*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
+            mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
+            rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
+
+        if doing_task:
+          screen.blit(prime, (0,0))
+          await globals()[functions[task]](relevant_entries, screen, actualwidth, actualheight)
+
+        pg.display.flip()
       
 
 async def lobby(websocket, data, is_owner):

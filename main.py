@@ -29,6 +29,8 @@ screen = pg.display.set_mode(size, pg.RESIZABLE)
 toshow = pg.image.load("sprites/book.png").convert_alpha()
 pg.display.set_icon(toshow)
 
+def fnt(num):
+  return pg.font.Font("OpenSansEmoji.ttf", num)
 
 def rtext(font, text, y, x = "center", color = (255, 255, 255), d = True, ctr = False):
   global screen, size, width, height
@@ -45,7 +47,7 @@ def rtext(font, text, y, x = "center", color = (255, 255, 255), d = True, ctr = 
 rtext(font, "Loading...", height//2 - 35)
 pg.display.flip()
 
-def textbox(y, x = "default", text = "", col = (255, 255, 255), wdth = 260, textcol = (255, 255, 255)):
+def textbox(y, x = "default", text = "", col = (255, 255, 255), wdth = 260, textcol = (255, 255, 255), myfont = font3):
   global screen, width, height, font, font2
   if x == "default":
     x = width//2
@@ -53,7 +55,7 @@ def textbox(y, x = "default", text = "", col = (255, 255, 255), wdth = 260, text
   pg.draw.rect(screen, (128, 128, 128), box)
   pg.draw.rect(screen, col, box, 2)
   if text:
-    rtext(font3, text, y, x+5, color = textcol)
+    rtext(myfont, text, y, x+5, color = textcol)
 
 def load(image, x = -1, y = -1, bound = False):
   for event in pg.event.get():
@@ -131,7 +133,6 @@ for i in range(256):
   else: tasks.append(None)
 
 mainmap = load("maps/ubc.png", bound = True)
-phones = load("maps/phones.png", bound = True)
 prime = taskbase(actualwidth, actualheight)
 
 
@@ -156,11 +157,6 @@ async def play(websocket, pdict, is_owner):
   screen.fill((0,0,0))
   temp = pg.Surface((width, height))
   temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
-  temp = pg.transform.scale(temp, (width*MS, height*MS))
-  screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
-
-  temp = pg.Surface((width, height), pg.SRCALPHA)
-  temp.blit(phones, (0,0), pg.Rect(ox, oy, width, height))
   temp = pg.transform.scale(temp, (width*MS, height*MS))
   screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
@@ -220,7 +216,7 @@ async def play(websocket, pdict, is_owner):
   clicked = False
 
   meeting_called = 0
-
+  textinput = ""
   flag = True
 
   while True:
@@ -237,21 +233,19 @@ async def play(websocket, pdict, is_owner):
       elif event.type == KEYDOWN:
         if event.key == K_SPACE:
           spacestate = 1
-        """
-        if event.key == K_BACKSPACE:
-          nickname = nickname[:-1]
-          textbox(height//3 - 100, 3*width//4, col = (114, 247, 247), text = nickname)
+        if event.key == K_BACKSPACE and meeting_called == 3:
+          textinput = textinput[:-1]
+          textbox(height - 70, 2*width//3 + 30, wdth = 400, col = (114, 247, 247), text = textinput, font = fnt(15))
           pg.display.flip()
-        elif event.unicode not in ",{}[]|\\":
+        elif event.unicode not in ",{}[]|\\" and meeting_called == 3:
           if keys[K_RSHIFT] or keys[K_LSHIFT]:
-            nickname += event.unicode.upper()
+            textinput += event.unicode.upper()
           else:
-            nickname += event.unicode
-          if font3.size(nickname)[0] > 258 or len(nickname) > 32:
-            nickname = nickname[:-1]
-          textbox(height//3 - 100, 3*width//4, col = (114, 247, 247), text = nickname)
+            textinput += event.unicode
+          if font3.size(textinput)[0] > 258 or len(textinput) > 100:
+            textinput = textinput[:-1]
+          textbox(height - 70, 2*width//3 + 30, wdth = 400, col = (114, 247, 247), text = textinput, font = fnt(15))
           pg.display.flip()
-        """
 
       
 
@@ -335,6 +329,7 @@ async def play(websocket, pdict, is_owner):
                   screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
                   i += 1
             rtext(font2, "Discuss: who is it?", actualheight - 35, 2, color = (128, 128, 128))
+            textbox(height - 70, 2*width//3 + 30, wdth = 400, col = (114, 247, 247), text = "", font = fnt(15))
             pg.display.flip()
           #elif entry[0] == "Chat" and meeting_called == 3:
 
@@ -374,11 +369,6 @@ async def play(websocket, pdict, is_owner):
         screen.fill((0,0,0))
         temp = pg.Surface((width, height))
         temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
-        temp = pg.transform.scale(temp, (width*MS, height*MS))
-        screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
-
-        temp = pg.Surface((width, height), pg.SRCALPHA)
-        temp.blit(phones, (0,0), pg.Rect(ox, oy, width, height))
         temp = pg.transform.scale(temp, (width*MS, height*MS))
         screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 

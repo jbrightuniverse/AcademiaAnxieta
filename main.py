@@ -250,7 +250,7 @@ async def play(websocket, pdict, is_owner):
           textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = textinput, myfont = fnt(15))
           pg.display.flip()
 
-    if keys[K_x] and is_owner:
+    if keys[K_TAB] and is_owner:
       await websocket.send("finish")
       res = await websocket.recv()
       return [res, is_owner]

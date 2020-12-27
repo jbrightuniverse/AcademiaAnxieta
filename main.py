@@ -348,20 +348,23 @@ async def play(websocket, pdict, is_owner):
             textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = "", myfont = fnt(15))
             pg.display.flip()
           elif entry[0] == "Chat" and meeting_called == 3:
-            storage.append(entry[1])
-            pg.draw.rect(screen, (255, 255, 255), pg.Rect(2*width//3 + 30, 0, width//3, height - 71))
+            storage.insert(0, entry[1])
+            pg.draw.rect(screen, (255, 255, 255), pg.Rect(2*width//3 + 30, 0, width//3, height - 72))
             basey = 0
             for ent in storage:
               e = pdict[ent[0]]
               message = ent[1]
-              pscale(pg.transform.scale(player, (40, 60)), 2*width//3 + 30, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]))
-              screen.blit(fnt(20).render(e["nickname"] + ":", True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 100 - basey))
-              screen.blit(fnt(15).render(message, True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 68 - basey))
+              if ent[0] != myusername:
+                pscale(pg.transform.scale(player, (40, 60)), width - 50, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]))
+                screen.blit(fnt(20).render(e["nickname"], True, (0,0,0)), (width - 60 - fnt(20).size(e["nickname"])[0], actualheight-35 - 100 - basey))
+                screen.blit(fnt(15).render(message, True, (0,0,0)), (width - 60 - fnt(15).size(message)[0], actualheight-35 - 68 - basey))
+              else:
+                pscale(pg.transform.scale(player, (40, 60)), 2*width//3 + 30, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]))
+                screen.blit(fnt(20).render(e["nickname"], True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 100 - basey))
+                screen.blit(fnt(15).render(message, True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 68 - basey))
               basey += 64
               if actualheight - 35 - 100 - basey <= 0: break
             pg.display.flip()
-            #screen.blit(fnt(15).render(message, True, (0,0,0)), (actualwidth - fnt(15).size(message)[0], actualheight-35 - 72))
-
 
           elif entry[0] == "Task":
             task = entry[1]
@@ -761,6 +764,7 @@ async def customize(websocket, appearance):
 
 async def create_game(websocket, data):
   global size, width, height
+  pg.mouse.set_cursor(*pg.cursors.arrow)
   display_menu()
   rtext(font2, "Name: ", height//4, width//2-font2.size("Name: ")[0]//2)
   rtext(font2, "Map: UBC (cannot change yet)", height//4 + 35, 5)

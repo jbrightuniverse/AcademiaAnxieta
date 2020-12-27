@@ -138,21 +138,15 @@ prime = taskbase(actualwidth, actualheight)
 async def play(websocket, pdict, is_owner):
   global screen, size, width, height, myusername, actualwidth, actualheight
 
-  await websocket.send("start")
-  res = await websocket.recv()
-  if "[" not in res:
-    print(res)
-    await websocket.send("leave")
-    await websocket.recv()
-    return
-  for entry in json.loads(res):
-    # handle the player change appearance thing later
-    if entry[0] == "Players":
-      for player in entry[1]:
-        for key in entry[1][player]:
-          pdict[player][key] = entry[1][player][key]
-    elif entry[0] == "Owner":
-      is_owner = True
+  if is_owner:
+    await websocket.send("start")
+    res = await websocket.recv()
+    for entry in json.loads(res):
+      # handle the player change appearance thing later
+      if entry[0] == "Players":
+        for player in entry[1]:
+          for key in entry[1][player]:
+            pdict[player][key] = entry[1][player][key]
   
   offsetx = (pdict[myusername]["x"]*MS - width//2)
   offsety = (pdict[myusername]["y"]*MS - height//2)
@@ -216,7 +210,7 @@ async def play(websocket, pdict, is_owner):
   whichleg = True
   task = 255
   doing_task = False
-  completed = [0, 255]
+  completed = [0, 1, 255]
 
   base = time.time()
   relevant_entries = None

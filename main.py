@@ -379,9 +379,9 @@ async def play(websocket, pdict, is_owner):
               else:
                 originalx = pdict[opt]["x"]
                 originaly = pdict[opt]["y"]
+                pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
                 for field in entry[1][opt]:
                   pdict[opt][field] = entry[1][opt][field]
-                pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
                 if originalx != pdict[opt]["x"] or originaly != pdict[opt]["y"]:
                   pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
                   if pdict[opt]["f2"] % 2 == 1:
@@ -532,9 +532,9 @@ async def lobby(websocket, data, is_owner):
             else:
               originalx = pdict[opt]["x"]
               originaly = pdict[opt]["y"]
+              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
               for field in entry[1][opt]:
                 pdict[opt][field] = entry[1][opt][field]
-              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
               if originalx != pdict[opt]["x"] or originaly != pdict[opt]["y"]:
                 pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
                 if pdict[opt]["f2"] % 2 == 1:
@@ -571,9 +571,9 @@ async def lobby(websocket, data, is_owner):
           else:
             originalx = pdict[opt]["x"]
             originaly = pdict[opt]["y"]
+            pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
             for field in entry[1][opt]:
               pdict[opt][field] = entry[1][opt][field]
-            pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
             if originalx != pdict[opt]["x"] or originaly != pdict[opt]["y"]:
               pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
               if pdict[opt]["f2"] % 2 == 1:
@@ -599,9 +599,9 @@ async def lobby(websocket, data, is_owner):
             else:
               originalx = pdict[opt]["x"]
               originaly = pdict[opt]["y"]
+              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
               for field in entry[1][opt]:
                 pdict[opt][field] = entry[1][opt][field]
-              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
               if originalx != pdict[opt]["x"] or originaly != pdict[opt]["y"]:
                 pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
                 if pdict[opt]["f2"] % 2 == 1:

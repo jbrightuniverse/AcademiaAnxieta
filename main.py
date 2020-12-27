@@ -218,6 +218,9 @@ async def play(websocket, pdict, is_owner):
   meeting_called = 0
   textinput = ""
   flag = True
+  return_pressed = False
+
+  storage = []
 
   while True:
     keys = pg.key.get_pressed()
@@ -235,21 +238,19 @@ async def play(websocket, pdict, is_owner):
           spacestate = 1
         if event.key == K_BACKSPACE and meeting_called == 3:
           textinput = textinput[:-1]
-          textbox(height - 70, 2*width//3 + 30, wdth = 400, col = (114, 247, 247), text = textinput, font = fnt(15))
+          textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = textinput, myfont = fnt(15))
           pg.display.flip()
-        elif event.unicode not in ",{}[]|\\" and meeting_called == 3:
+        elif event.unicode not in ",{}[]|\\\r" and meeting_called == 3:
           if keys[K_RSHIFT] or keys[K_LSHIFT]:
             textinput += event.unicode.upper()
           else:
             textinput += event.unicode
-          if font3.size(textinput)[0] > 258 or len(textinput) > 100:
+          if fnt(15).size(textinput)[0] > 438 or len(textinput) > 100:
             textinput = textinput[:-1]
-          textbox(height - 70, 2*width//3 + 30, wdth = 400, col = (114, 247, 247), text = textinput, font = fnt(15))
+          textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = textinput, myfont = fnt(15))
           pg.display.flip()
 
-      
-
-    if keys[K_RSHIFT] and is_owner:
+    if keys[K_x] and is_owner:
       await websocket.send("finish")
       res = await websocket.recv()
       return [res, is_owner]
@@ -257,8 +258,11 @@ async def play(websocket, pdict, is_owner):
       await websocket.send("leave")
       await websocket.recv()
       break
-    if keys[K_LSHIFT] and meeting_called == 0:
+    if keys[K_z] and meeting_called == 0:
       meeting_called = 1
+    if keys[K_RETURN] and meeting_called == 3:
+      return_pressed = True
+
     if doing_task:
       mpx, mpy = pg.mouse.get_pos()
       def collide(x, y):
@@ -296,6 +300,11 @@ async def play(websocket, pdict, is_owner):
         elif meeting_called == 1: 
           payload = "emergency"
           meeting_called = 2
+        elif meeting_called == 3 and len(textinput) and return_pressed:
+          return_pressed = False
+          payload = f"chat,{textinput}"
+          textinput = ""    
+          textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = "", myfont = fnt(15))  
         else: payload = f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}"
         await websocket.send(payload)
         jsondata = await websocket.recv()
@@ -308,6 +317,7 @@ async def play(websocket, pdict, is_owner):
             is_owner = True
           elif entry[0] == "Meeting":
             meettype = entry[1]
+            whodidit = entry[2]
             meeting_called = 3
             rtext(font5, "TOWN", actualheight//2 - 105, color = (255, 0, 0))
             rtext(font5, "HALL", actualheight//2 + 5, color = (255, 0, 0))
@@ -319,7 +329,12 @@ async def play(websocket, pdict, is_owner):
             i = 0
             for pos in range(20):
               for x in range(5):
-                pg.draw.rect(screen, (200, 200, 200), pg.Rect(x*rightborder//5 + 10, pos*37 + 10, rightborder//5 - 3, 33))
+                if i < len(playerstoadd) and playerstoadd[i] == whodidit:
+                  col = (252, 186, 3)
+                else: col = (200, 200, 200)
+                pg.draw.rect(screen, col, pg.Rect(x*rightborder//5 + 10, pos*37 + 10, rightborder//5 - 3, 33))
+                if col == (252, 186, 3):
+                  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 10).render("(Called)", True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 28))
                 if i < len(playerstoadd):
                   e = pdict[playerstoadd[i]]
                   pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]))
@@ -329,9 +344,24 @@ async def play(websocket, pdict, is_owner):
                   screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
                   i += 1
             rtext(font2, "Discuss: who is it?", actualheight - 35, 2, color = (128, 128, 128))
-            textbox(height - 70, 2*width//3 + 30, wdth = 400, col = (114, 247, 247), text = "", font = fnt(15))
+            screen.blit(font3.render("Press enter to send message.", True, (128, 128, 128)), (actualwidth - font3.size("Press enter to send message.")[0], actualheight-35))
+            textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = "", myfont = fnt(15))
             pg.display.flip()
-          #elif entry[0] == "Chat" and meeting_called == 3:
+          elif entry[0] == "Chat" and meeting_called == 3:
+            storage.append([user, message])
+            pg.draw.rect(screen, (255, 255, 255), pg.Rect(2*width//3 + 30, 0, width//3, height - 71))
+            basey = 0
+            for ent in storage:
+              user = entry[0]]
+              message = entry[1]
+              pscale(pg.transform.scale(player, (40, 60)), 2*width//3 + 30, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]))
+              screen.blit(fnt(20).render(user["nickname"] + ":", True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 100 - basey))
+              screen.blit(fnt(15).render(message, True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 68 - basey))
+              basey += 64
+              if actualheight - 35 - 100 - basey <= 0: break
+            pg.display.flip()
+            #screen.blit(fnt(15).render(message, True, (0,0,0)), (actualwidth - fnt(15).size(message)[0], actualheight-35 - 72))
+
 
           elif entry[0] == "Task":
             task = entry[1]
@@ -354,6 +384,7 @@ async def play(websocket, pdict, is_owner):
             del pdict[entry[1]]
             flag = True
             print(f"{entry[1]} left the game.")
+        return_pressed = False
         if handle_after:
           return [[], is_owner]
         
@@ -420,8 +451,6 @@ async def play(websocket, pdict, is_owner):
 
         pg.display.flip()
 
-      elif meeting_called == 3:
-        pass
     flag = False
       
 

@@ -348,14 +348,14 @@ async def play(websocket, pdict, is_owner):
             textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = "", myfont = fnt(15))
             pg.display.flip()
           elif entry[0] == "Chat" and meeting_called == 3:
-            storage.append([user, message])
+            storage.append(entry[1])
             pg.draw.rect(screen, (255, 255, 255), pg.Rect(2*width//3 + 30, 0, width//3, height - 71))
             basey = 0
             for ent in storage:
-              user = entry[0]
-              message = entry[1]
+              e = pdict[ent[0]]
+              message = ent[1]
               pscale(pg.transform.scale(player, (40, 60)), 2*width//3 + 30, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]))
-              screen.blit(fnt(20).render(user["nickname"] + ":", True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 100 - basey))
+              screen.blit(fnt(20).render(e["nickname"] + ":", True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 100 - basey))
               screen.blit(fnt(15).render(message, True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 68 - basey))
               basey += 64
               if actualheight - 35 - 100 - basey <= 0: break
@@ -374,12 +374,15 @@ async def play(websocket, pdict, is_owner):
                 pdict[opt]["f"] = 0
                 pdict[opt]["f2"] = 0
               else:
-                pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
-                pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
-                if pdict[opt]["f2"] % 2 == 1:
-                  whichleg = not whichleg
+                originalx = pdict[opt]["x"]
+                originaly = pdict[opt]["y"]
                 for field in entry[1][opt]:
                   pdict[opt][field] = entry[1][opt][field]
+                pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
+                if originalx != pdict[opt]["x"] or originaly != pdict[opt]["y"]:
+                  pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+                  if pdict[opt]["f2"] % 2 == 1:
+                    whichleg = not whichleg
           elif entry[0] == "Left":
             del pdict[entry[1]]
             flag = True
@@ -524,12 +527,15 @@ async def lobby(websocket, data, is_owner):
               pdict[opt]["f"] = 0
               pdict[opt]["f2"] = 0
             else:
-              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
-              pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
-              if pdict[opt]["f2"] % 2 == 1:
-                whichleg = not whichleg
+              originalx = pdict[opt]["x"]
+              originaly = pdict[opt]["y"]
               for field in entry[1][opt]:
                 pdict[opt][field] = entry[1][opt][field]
+              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
+              if originalx != pdict[opt]["x"] or originaly != pdict[opt]["y"]:
+                pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+                if pdict[opt]["f2"] % 2 == 1:
+                  whichleg = not whichleg
         elif entry[0] == "Left":
           del pdict[entry[1]]
           flag = True
@@ -541,6 +547,8 @@ async def lobby(websocket, data, is_owner):
       break
     await websocket.send(f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}")
     jsondata = await websocket.recv()
+    if "[" not in jsondata:
+      print(jsondata)
     data = json.loads(jsondata)
     handle_after = False
     for entry in data:
@@ -558,12 +566,15 @@ async def lobby(websocket, data, is_owner):
             pdict[opt]["f"] = 0
             pdict[opt]["f2"] = 0
           else:
-            pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
-            pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
-            if pdict[opt]["f2"] % 2 == 1:
-              whichleg = not whichleg
+            originalx = pdict[opt]["x"]
+            originaly = pdict[opt]["y"]
             for field in entry[1][opt]:
               pdict[opt][field] = entry[1][opt][field]
+            pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
+            if originalx != pdict[opt]["x"] or originaly != pdict[opt]["y"]:
+              pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+              if pdict[opt]["f2"] % 2 == 1:
+                whichleg = not whichleg
       elif entry[0] == "Left":
         del pdict[entry[1]]
         flag = True
@@ -583,12 +594,15 @@ async def lobby(websocket, data, is_owner):
               pdict[opt]["f"] = 0
               pdict[opt]["f2"] = 0
             else:
-              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
-              pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
-              if pdict[opt]["f2"] % 2 == 1:
-                whichleg = not whichleg
+              originalx = pdict[opt]["x"]
+              originaly = pdict[opt]["y"]
               for field in entry[1][opt]:
                 pdict[opt][field] = entry[1][opt][field]
+              pdict[opt]["f"] = pdict[opt]["x"] < entry[1][opt]["x"]
+              if originalx != pdict[opt]["x"] or originaly != pdict[opt]["y"]:
+                pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
+                if pdict[opt]["f2"] % 2 == 1:
+                  whichleg = not whichleg
         elif entry[0] == "Left":
           del pdict[entry[1]]
           flag = True

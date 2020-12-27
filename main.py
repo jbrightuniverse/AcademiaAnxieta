@@ -210,7 +210,7 @@ async def play(websocket, pdict, is_owner):
   whichleg = True
   task = 255
   doing_task = False
-  completed = [0, 1, 255]
+  completed = [0, 255]
 
   base = time.time()
   relevant_entries = None
@@ -290,7 +290,7 @@ async def play(websocket, pdict, is_owner):
         elif update_render:
           flag = True
 
-    if spacestate and task not in completed and not doing_task:
+    if spacestate and task not in completed and not doing_task and task != 1:
       doing_task = True
       relevant_entries = await globals()[prep[task]](screen, actualwidth, actualheight)
       flag = True

@@ -21,6 +21,9 @@ prep[128] = "prep_books"
 functions[128] = "display_books"
 inputs[128] = "return_books"
 
+taskdesc = [""]*256
+taskdesc[128] = "Koerner: Return library books"
+
 bookbase = pg.image.load("sprites/book.png").convert_alpha()
 
 def taskbase(actualwidth, actualheight):

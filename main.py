@@ -20,6 +20,9 @@ pg.display.set_caption("Academia")
 font = pg.font.Font("OpenSansEmoji.ttf", 70)
 font2 = pg.font.Font("OpenSansEmoji.ttf", 30)
 font3 = pg.font.Font("OpenSansEmoji.ttf", 20)
+font4 = pg.font.Font("OpenSansEmoji.ttf", 40)
+
+font5 = pg.font.Font("OpenSansEmoji.ttf", 100)
 
 size = width, height = 1536, 801
 screen = pg.display.set_mode(size, pg.RESIZABLE)
@@ -53,6 +56,9 @@ def textbox(y, x = "default", text = "", col = (255, 255, 255), wdth = 260, text
     rtext(font3, text, y, x+5, color = textcol)
 
 def load(image, x = -1, y = -1, bound = False):
+  for event in pg.event.get():
+    if event.type == QUIT: 
+      sys.exit()
   img = pg.image.load(image).convert_alpha()
   if x != -1:
     img = pg.transform.scale(img, (x, y))
@@ -67,9 +73,16 @@ def half(image):
   return pg.transform.scale(image, (image.get_width()//2, image.get_height()//2))
 
 for file in os.listdir("assets"):
+  for event in pg.event.get():
+    if event.type == QUIT: 
+      sys.exit()
   globals()[file.split(".")[0]] = load(f"assets/{file}")
 
 saved = [load(f"circles/{i}.png") for i in range(101)]
+
+for event in pg.event.get():
+  if event.type == QUIT: 
+    sys.exit()
 
 def display_menu():
   global size, width, height, font, font2
@@ -113,11 +126,12 @@ from taskmod import *
 
 tasks = []
 for i in range(256):
-  if i == 128:
+  if i in [1, 128]:
     tasks.append(load(f"maps/tasks/{i}.png", bound = True))
   else: tasks.append(None)
 
 mainmap = load("maps/ubc.png", bound = True)
+phones = load("maps/phones.png", bound = True)
 prime = taskbase(actualwidth, actualheight)
 
 
@@ -126,6 +140,11 @@ async def play(websocket, pdict, is_owner):
 
   await websocket.send("start")
   res = await websocket.recv()
+  if "[" not in res:
+    print(res)
+    await websocket.send("leave")
+    await websocket.recv()
+    return
   for entry in json.loads(res):
     # handle the player change appearance thing later
     if entry[0] == "Players":
@@ -143,6 +162,11 @@ async def play(websocket, pdict, is_owner):
   screen.fill((0,0,0))
   temp = pg.Surface((width, height))
   temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
+  temp = pg.transform.scale(temp, (width*MS, height*MS))
+  screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
+
+  temp = pg.Surface((width, height), pg.SRCALPHA)
+  temp.blit(phones, (0,0), pg.Rect(ox, oy, width, height))
   temp = pg.transform.scale(temp, (width*MS, height*MS))
   screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
@@ -165,6 +189,29 @@ async def play(websocket, pdict, is_owner):
       mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
       rtext(thefont, e["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
+  tasknames = pdict[myusername]["tasks"]
+  total = len(tasknames) * len(pdict)
+  complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict])
+
+  by = 42
+  results = {}
+  ltext = f"TODO ({round(complete*100/total)}% total)"
+  maxwidth = font4.size(ltext)[0] + 4
+  for tsk in tasknames:
+    result = taskdesc[int(tsk)]
+    if tasknames[tsk]: result += " (Complete)"
+    results[tsk] = result
+    if font3.size(result)[0] + 4 > maxwidth:
+      maxwidth = font3.size(result)[0] + 4
+
+  tasklist = pg.Surface((maxwidth, len(tasknames)*25 + 40), pg.SRCALPHA)
+  tasklist.fill((255, 255, 255, 220))
+  screen.blit(tasklist, (2, 2))
+  screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
+  for tsk in tasknames:
+    screen.blit(font3.render(results[tsk], True, [(215, 146, 146), (136, 255, 136)][tasknames[tsk]]), (2, by))
+    by += 25
+
   pg.display.flip()
   whichleg = True
   task = 255
@@ -178,6 +225,8 @@ async def play(websocket, pdict, is_owner):
   dmx, dmy = pg.mouse.get_pos()
   clicked = False
 
+  meeting_called = 0
+
   while True:
     flag = False
     keys = pg.key.get_pressed()
@@ -190,8 +239,27 @@ async def play(websocket, pdict, is_owner):
         screen = pg.display.set_mode(size, pg.RESIZABLE)
         flag = True
         pg.display.flip()
-      elif event.type == KEYDOWN and event.key == K_SPACE:
-        spacestate = 1
+      elif event.type == KEYDOWN:
+        if event.key == K_SPACE:
+          spacestate = 1
+        """
+        if event.key == K_BACKSPACE:
+          nickname = nickname[:-1]
+          textbox(height//3 - 100, 3*width//4, col = (114, 247, 247), text = nickname)
+          pg.display.flip()
+        elif event.unicode not in ",{}[]|\\":
+          if keys[K_RSHIFT] or keys[K_LSHIFT]:
+            nickname += event.unicode.upper()
+          else:
+            nickname += event.unicode
+          if font3.size(nickname)[0] > 258 or len(nickname) > 32:
+            nickname = nickname[:-1]
+          textbox(height//3 - 100, 3*width//4, col = (114, 247, 247), text = nickname)
+          pg.display.flip()
+        """
+
+      
+
     if keys[K_RSHIFT] and is_owner:
       await websocket.send("finish")
       res = await websocket.recv()
@@ -200,6 +268,8 @@ async def play(websocket, pdict, is_owner):
       await websocket.send("leave")
       await websocket.recv()
       break
+    if keys[K_LSHIFT] and meeting_called == 0:
+      meeting_called = 1
     if doing_task:
       mpx, mpy = pg.mouse.get_pos()
       def collide(x, y):
@@ -214,6 +284,9 @@ async def play(websocket, pdict, is_owner):
       else:
         is_hover, clicked, dmx, dmy, update_render, finished = await globals()[inputs[task]](relevant_entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked)
         if finished:
+          await websocket.send(f"task,{task}")
+          res = await websocket.recv()
+          pdict[myusername]["tasks"][str(task)] = True
           is_hover = -1
           clicked = False
           flag = True
@@ -231,6 +304,9 @@ async def play(websocket, pdict, is_owner):
     if time.time() - base >= 0.07 or flag:
       if time.time() - base >= 0.07:
         if doing_task: payload = f"move,0,0,0,0,0"
+        elif meeting_called == 1: 
+          payload = "emergency"
+          meeting_called = 2
         else: payload = f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}"
         await websocket.send(payload)
         jsondata = await websocket.recv()
@@ -241,6 +317,32 @@ async def play(websocket, pdict, is_owner):
             handle_after = True
           elif entry[0] == "Owner":
             is_owner = True
+          elif entry[0] == "Meeting":
+            meettype = entry[1]
+            meeting_called = 3
+            rtext(font5, "TOWN", actualheight//2 - 105, color = (255, 0, 0))
+            rtext(font5, "HALL", actualheight//2 + 5, color = (255, 0, 0))
+            pg.display.flip()
+            time.sleep(2.5)
+            screen.fill((255, 255, 255))
+            rightborder = 2*actualwidth//3
+            playerstoadd = list(pdict.keys())
+            i = 0
+            for pos in range(20):
+              for x in range(5):
+                pg.draw.rect(screen, (200, 200, 200), pg.Rect(x*rightborder//5 + 10, pos*37 + 10, rightborder//5 - 3, 33))
+                if i < len(playerstoadd):
+                  e = pdict[playerstoadd[i]]
+                  pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]))
+                  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render(e["nickname"], True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 12))
+                  i+= 1
+                elif i == len(playerstoadd):
+                  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
+                  i += 1
+            rtext(font2, "Discuss: who is it?", actualheight - 35, 2, color = (128, 128, 128))
+            pg.display.flip()
+          #elif entry[0] == "Chat" and meeting_called == 3:
+
           elif entry[0] == "Task":
             task = entry[1]
           elif entry[0] == "Players":
@@ -267,7 +369,7 @@ async def play(websocket, pdict, is_owner):
         
         base = time.time()
 
-      if flag:
+      if flag and meeting_called != 3:
         offsetx = (pdict[myusername]["x"]*MS - width//2)
         offsety = (pdict[myusername]["y"]*MS - height//2)
 
@@ -277,6 +379,11 @@ async def play(websocket, pdict, is_owner):
         screen.fill((0,0,0))
         temp = pg.Surface((width, height))
         temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
+        temp = pg.transform.scale(temp, (width*MS, height*MS))
+        screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
+
+        temp = pg.Surface((width, height), pg.SRCALPHA)
+        temp.blit(phones, (0,0), pg.Rect(ox, oy, width, height))
         temp = pg.transform.scale(temp, (width*MS, height*MS))
         screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
@@ -299,11 +406,37 @@ async def play(websocket, pdict, is_owner):
             mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
             rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
+        tasknames = pdict[myusername]["tasks"]
+        total = len(tasknames) * len(pdict)
+        complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict])
+
+        by = 42
+        results = {}
+        ltext = f"TODO ({round(complete*100/total)}% total)"
+        maxwidth = font4.size(ltext)[0] + 4
+        for tsk in tasknames:
+          result = taskdesc[int(tsk)]
+          if tasknames[tsk]: result += " (Complete)"
+          results[tsk] = result
+          if font3.size(result)[0] + 4 > maxwidth:
+            maxwidth = font3.size(result)[0] + 4
+
+        tasklist = pg.Surface((maxwidth, len(tasknames)*25 + 40), pg.SRCALPHA)
+        tasklist.fill((255, 255, 255, 220))
+        screen.blit(tasklist, (2, 2))
+        screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
+        for tsk in tasknames:
+          screen.blit(font3.render(results[tsk], True, [(215, 146, 146), (136, 255, 136)][tasknames[tsk]]), (2, by))
+          by += 25
+
         if doing_task:
           screen.blit(prime, (0,0))
           await globals()[functions[task]](relevant_entries, screen, actualwidth, actualheight)
 
         pg.display.flip()
+
+      elif meeting_called == 3:
+        pass
       
 
 async def lobby(websocket, data, is_owner):
@@ -1250,7 +1383,7 @@ async def program():
         """
         await asyncio.sleep(0.03)
   except Exception as error:
-    if "code = 1000 (OK), no reason" not in str(error) and "code = 1006" not in str(error):
+    if "code = 1000 (OK), no reason" not in str(error) and "code = 1006" not in str(error) and "code = 1011" not in str(error):
       print("".join(traceback.format_exception(type(error), error, error.__traceback__, 999)))
       return ""
     if "code" in str(error):

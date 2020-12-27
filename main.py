@@ -352,7 +352,7 @@ async def play(websocket, pdict, is_owner):
             pg.draw.rect(screen, (255, 255, 255), pg.Rect(2*width//3 + 30, 0, width//3, height - 71))
             basey = 0
             for ent in storage:
-              user = entry[0]]
+              user = entry[0]
               message = entry[1]
               pscale(pg.transform.scale(player, (40, 60)), 2*width//3 + 30, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]))
               screen.blit(fnt(20).render(user["nickname"] + ":", True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 100 - basey))

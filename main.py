@@ -221,8 +221,9 @@ async def play(websocket, pdict, is_owner):
 
   meeting_called = 0
 
+  flag = True
+
   while True:
-    flag = False
     keys = pg.key.get_pressed()
     spacestate = 0
     for event in pg.event.get():
@@ -431,6 +432,7 @@ async def play(websocket, pdict, is_owner):
 
       elif meeting_called == 3:
         pass
+    flag = False
       
 
 async def lobby(websocket, data, is_owner):

@@ -518,6 +518,13 @@ async def play(websocket, pdict, is_owner):
                 screen.blit(font3.render(results[tsk], True, [(215, 146, 146), (136, 255, 136)][tasknames[tsk]]), (2, by))
                 by += 25
 
+            else:
+              tasklist = pg.Surface((maxwidth, 65), pg.SRCALPHA)
+              tasklist.fill((255, 255, 255, 220))
+              screen.blit(tasklist, (2, 2))
+              screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
+              screen.blit(font3.render("Ruin everyone as BRC.", True, (215, 146, 146)), (2, by))
+
             if doing_task:
               screen.blit(prime, (0,0))
               await globals()[functions[task]](relevant_entries, screen, actualwidth, actualheight)

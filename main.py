@@ -280,7 +280,7 @@ async def play(websocket, pdict, is_owner):
   globalitems = []
 
   while True:
-    keys = pg.key.get_pressed()
+    keys = list(pg.key.get_pressed())
     spacestate = 0
     for event in pg.event.get():
       if event.type == QUIT: 

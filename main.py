@@ -168,13 +168,20 @@ async def play(websocket, pdict, is_owner):
         for player in entry[1]:
           for key in entry[1][player]:
             pdict[player][key] = entry[1][player][key]
+    
+  await websocket.send("force")
+  res = await websocket.recv()
+  d = json.loads(res)
+  for entry in d:
+    for key in d[entry]:
+      pdict[entry][key] = d[entry][key]
   
   if len(pdict) > 1:
     numbrc = (len(pdict) + 3)//10 + 1
   else: numbrc = 0
   fade()
   delay(0.5)
-  rtext(fnt(200), ["Student", "BRC"][pdict[myusername]["impostor"]], actualheight//2 - 210)
+  rtext(fnt(200), ["Student", "BRC"][pdict[myusername]["impostor"]], actualheight//2 - 210, color = [(255, 255, 255), (255, 0, 0)][pdict[myusername]["impostor"]])
   rtext(fnt(70), f"{numbrc} BRC lurk{['s', ''][numbrc != 1]} in the shadows...", actualheight//2 + 10)
   pg.display.flip()
   delay(2)

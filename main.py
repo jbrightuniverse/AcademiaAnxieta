@@ -519,7 +519,8 @@ async def play(websocket, pdict, is_owner):
                 by += 25
 
             if doing_task:
-                screen.blit(prime, (0,0))
+              screen.blit(prime, (0,0))
+              await globals()[functions[task]](relevant_entries, screen, actualwidth, actualheight)
             
             if (time.time() - base) < 0.035:
                 await asyncio.sleep(0.035 - (time.time() - base))

@@ -249,7 +249,7 @@ async def play(websocket, pdict, is_owner):
     screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
     screen.blit(font3.render("Ruin everyone as BRC.", True, (215, 146, 146)), (2, by))
     by += 25
-    diff = max(0, round(pdict[myusername]["killcooldown"] + globalkcool - time.time()))
+    diff = max(0, round(pdict[myusername]["killcooldown"] + 0 - time.time()))
     if diff == 0: phr = "You can beam now."
     else: phr = f"You can beam again in {diff}s."
     screen.blit(font3.render(phr, True, (215, 146, 146)), (2, by))

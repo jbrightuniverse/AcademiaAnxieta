@@ -177,7 +177,7 @@ async def play(websocket, pdict, is_owner):
     e["f"] = 0
     e["f2"] = 0
     if e["x"]*MS in range(offsetx, offsetx + width) and e["y"]*MS in range(offsety, offsety + height):
-      pscale(player, e["x"]*MS-pwidth2//2 - offsetx, e["y"]*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]))
+      pscale(player, e["x"]*MS-pwidth2//2 - offsetx, e["y"]*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]), transp = e["ghost"])
       my = nmap(e["y"]*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
       mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
       rtext(thefont, e["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
@@ -265,7 +265,7 @@ async def play(websocket, pdict, is_owner):
             textinput = textinput[:-1]
           textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = textinput, myfont = fnt(15))
           pg.display.flip()
-      elif event.type == MOUSEBUTTONUP and meeting_called == 3 and curnum in range(len(playerstoadd)+1):
+      elif event.type == MOUSEBUTTONUP and meeting_called == 3 and curnum in range(len(playerstoadd)+1) and (curnum == len(playerstoadd) or not pdict[playerstoadd[curnum]]["ghost"]):
         should_vote = True
 
     if keys[K_TAB] and is_owner:
@@ -276,7 +276,7 @@ async def play(websocket, pdict, is_owner):
       await websocket.send("leave")
       await websocket.recv()
       break
-    if keys[K_z] and meeting_called == 0 and task == 1:
+    if spacestate and meeting_called == 0 and task == 1 and not pdict[myusername]["ghost"]:
       meeting_called = 1
     if keys[K_RETURN] and meeting_called == 3:
       return_pressed = True
@@ -316,10 +316,9 @@ async def play(websocket, pdict, is_owner):
       acceptstart2 = (mpy - 10)//37 * 37 + 10
       acceptend2 = acceptstart2 + 33
 
-      if mpx in range(acceptstart, acceptend) and mpy in range(acceptstart2, acceptend2) and (mpy - 10)//37 in range(20) and (mpx - 10)//(rightborder//5) in range(5):
+      if not pdict[myusername]["ghost"] and mpx in range(acceptstart, acceptend) and mpy in range(acceptstart2, acceptend2) and (mpy - 10)//37 in range(20) and (mpx - 10)//(rightborder//5) in range(5):
         num = 20*((mpx - 10)//(rightborder//5)) + (mpy - 10)//37
-        
-        if num in range(len(playerstoadd)):
+        if num in range(len(playerstoadd)) and not pdict[playerstoadd[num]]["ghost"]:
           if num != curnum:
             pg.mouse.set_cursor(*pg.cursors.diamond)
             curnum = num
@@ -360,6 +359,7 @@ async def play(websocket, pdict, is_owner):
                 col = [97, 235, 52]
             if i == curnum and i <= len(playerstoadd):
               col = [min(255, k + 20) for k in col]
+            if i < len(playerstoadd) and pdict[playerstoadd[i]]["ghost"]: col = [255, 0, 0]
             pg.draw.rect(screen, col, pg.Rect(x*rightborder//5 + 10, pos*37 + 10, rightborder//5 - 3, 33))
             extra = ""
             if call:
@@ -370,7 +370,7 @@ async def play(websocket, pdict, is_owner):
               screen.blit(pg.font.Font("OpenSansEmoji.ttf", 10).render(extra, True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 28))
             if i < len(playerstoadd):
               e = pdict[playerstoadd[i]]
-              pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]))
+              pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]), transp = e["ghost"])
               screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render(e["nickname"], True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 12))
               i+= 1
             elif i == len(playerstoadd):
@@ -397,7 +397,7 @@ async def play(websocket, pdict, is_owner):
         elif meeting_called == 1: 
           payload = "emergency"
           meeting_called = 2
-        elif should_vote and meeting_called == 3:
+        elif should_vote and meeting_called == 3 and not pdict[myusername]["ghost"]:
           should_vote = False
           vote = playerstoadd + ["skip"]
           payload = f"vote,{vote[curnum]}"
@@ -441,12 +441,13 @@ async def play(websocket, pdict, is_owner):
                 if i < len(playerstoadd) and playerstoadd[i] == whodidit:
                   col = (252, 186, 3)
                 else: col = (200, 200, 200)
+                if i < len(playerstoadd) and pdict[playerstoadd[i]]["ghost"]: col = (255, 0, 0)
                 pg.draw.rect(screen, col, pg.Rect(x*rightborder//5 + 10, pos*37 + 10, rightborder//5 - 3, 33))
                 if col == (252, 186, 3):
                   screen.blit(pg.font.Font("OpenSansEmoji.ttf", 10).render("(Called)", True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 28))
                 if i < len(playerstoadd):
                   e = pdict[playerstoadd[i]]
-                  pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]))
+                  pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]), transp = e["ghost"])
                   screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render(e["nickname"], True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 12))
                   i+= 1
                 elif i == len(playerstoadd):
@@ -464,13 +465,14 @@ async def play(websocket, pdict, is_owner):
             basey = 0
             for ent in storage:
               e = pdict[ent[0]]
+              if e["ghost"] and not pdict[myusername]["ghost"]: continue
               message = ent[1]
               if ent[0] != myusername:
-                pscale(pg.transform.scale(player, (40, 60)), width - 50, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]))
+                pscale(pg.transform.scale(player, (40, 60)), width - 50, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]), transp = e["ghost"])
                 screen.blit(fnt(20).render(e["nickname"], True, (0,0,0)), (width - 60 - fnt(20).size(e["nickname"])[0], actualheight-35 - 100 - basey))
                 screen.blit(fnt(15).render(message, True, (0,0,0)), (width - 60 - fnt(15).size(message)[0], actualheight-35 - 68 - basey))
               else:
-                pscale(pg.transform.scale(player, (40, 60)), 2*width//3 + 30, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]))
+                pscale(pg.transform.scale(player, (40, 60)), 2*width//3 + 30, actualheight-35 - 100 - basey, (e["h"], e["s"], e["l"]), transp = e["ghost"])
                 screen.blit(fnt(20).render(e["nickname"], True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 100 - basey))
                 screen.blit(fnt(15).render(message, True, (0,0,0)), (2*width//3 + 80, actualheight-35 - 68 - basey))
               basey += 64
@@ -525,7 +527,7 @@ async def play(websocket, pdict, is_owner):
         temp = pg.transform.scale(temp, (width*MS, height*MS))
         screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
-        if task not in completed:
+        if task not in completed and (not pdict[myusername]["ghost"] or task != 1):
           overmap = tasks[task]
           temp = pg.Surface((width, height), pg.SRCALPHA)
           temp.blit(overmap, (0,0), pg.Rect(ox, oy, width, height))
@@ -534,7 +536,7 @@ async def play(websocket, pdict, is_owner):
 
         for opt in pdict:
           e = pdict[opt]
-          if e["x"]*MS in range(offsetx, offsetx + width) and e["y"]*MS in range(offsety, offsety + height):
+          if e["x"]*MS in range(offsetx, offsetx + width) and e["y"]*MS in range(offsety, offsety + height) and (pdict[myusername]["ghost"] or not e["ghost"]):
             if e["f2"] > 0:
               todo = 1+whichleg
             else: todo = 0
@@ -593,6 +595,7 @@ async def play(websocket, pdict, is_owner):
                 else: col = [97, 235, 52]
               elif i == len(playerstoadd) and voted[myusername] == "skip":
                 col = [97, 235, 52]
+            if i < len(playerstoadd) and pdict[playerstoadd[i]]["ghost"]: col = [255, 0, 0]
             pg.draw.rect(screen, col, pg.Rect(x*rightborder//5 + 10, pos*37 + 10, rightborder//5 - 3, 33))
             extra = ""
             if call:
@@ -606,7 +609,7 @@ async def play(websocket, pdict, is_owner):
               screen.blit(pg.font.Font("OpenSansEmoji.ttf", 10).render(extra, True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 28))
             if i < len(playerstoadd):
               e = pdict[playerstoadd[i]]
-              pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]))
+              pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]), transp = e["ghost"])
               screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render(e["nickname"], True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 12))
               i+= 1
             elif i == len(playerstoadd):
@@ -717,10 +720,11 @@ async def lobby(websocket, data, is_owner):
   thefont = pg.font.Font("OpenSansEmoji.ttf", int(round(fsize)))
   for entry in players:
     pdict[entry] = players[entry]
+    pdict[entry]["ghost"] = 0
     e = pdict[entry]
     e["f"] = 0
     e["f2"] = 0
-    pscale(player, e["x"]-pwidth//2, e["y"]-pheight//2, (e["h"], e["s"], e["l"]))
+    pscale(player, e["x"]-pwidth//2, e["y"]-pheight//2, (e["h"], e["s"], e["l"]), transp = e["ghost"])
     my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
     mx = nmap(e["x"], 0, actualwidth, 0, width)
     rtext(thefont, pdict[entry]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
@@ -762,6 +766,7 @@ async def lobby(websocket, data, is_owner):
                 pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
                 if pdict[opt]["f2"] % 2 == 1:
                   whichleg = not whichleg
+            pdict[opt]["ghost"] = 0
         elif entry[0] == "Left":
           del pdict[entry[1]]
           flag = True
@@ -801,6 +806,7 @@ async def lobby(websocket, data, is_owner):
               pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
               if pdict[opt]["f2"] % 2 == 1:
                 whichleg = not whichleg
+          pdict[opt]["ghost"] = 0
       elif entry[0] == "Left":
         del pdict[entry[1]]
         flag = True
@@ -829,6 +835,7 @@ async def lobby(websocket, data, is_owner):
                 pdict[opt]["f2"] = (pdict[opt]["f2"] + 1) % 2
                 if pdict[opt]["f2"] % 2 == 1:
                   whichleg = not whichleg
+            pdict[opt]["ghost"] = 0
         elif entry[0] == "Left":
           del pdict[entry[1]]
           flag = True
@@ -844,7 +851,7 @@ async def lobby(websocket, data, is_owner):
           todo = 0
 
         result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
-        pscale(result, e["x"]-pwidth//2, e["y"]-pheight//2, (e["h"], e["s"], e["l"]))
+        pscale(result, e["x"]-pwidth//2, e["y"]-pheight//2, (e["h"], e["s"], e["l"]), transp = e["ghost"])
         my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
         mx = nmap(e["x"], 0, actualwidth, 0, width)
         rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)

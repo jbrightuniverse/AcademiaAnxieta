@@ -740,14 +740,17 @@ async def play(websocket, pdict, is_owner):
             phrase = "Nobody was expelled (skipped)."
           else:
             pdict[highest[0]]["ghost"] = 1
-            phrase = f"{pdict[highest[0]]['nickname']} was not a BRC."
+            if pdict[highest[0]]["impostor"]:
+              phrase = f"{pdict[highest[0]]['nickname']} was a BRC."
+            else: phrase = f"{pdict[highest[0]]['nickname']} was not a BRC."
         else:
           phrase = "Nobody was expelled (tie)."
         fsize = 100
         while fnt(fsize).size(phrase)[0] > width:
           fsize -= 2
         rtext(fnt(fsize), phrase, actualheight//2)
-        rtext(fnt(70), "0 BRC remain.", actualheight//2 + 130)
+        numbrc = len([b for b in pdict if not pdict[b]["ghost"] and pdict[b]["impostor"]])
+        rtext(fnt(70), f"{numbrc} BRC remain{['s', ''][numbrc != 1]}", actualheight//2 + 130)
         pg.display.flip()
         delay(2)
         kick_player = False

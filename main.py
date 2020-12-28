@@ -489,6 +489,9 @@ async def play(websocket, pdict, is_owner):
                     ex = e["x"]
                     ey = e["y"]
                     
+                if e["f2"] > 0:
+                  todo = 1+whichleg
+                else: todo = 0
                 result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
                 pscale(result, ex*MS-pwidth2//2 - offsetx, ey*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]), transp = e["ghost"])
                 my = nmap(ey*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)

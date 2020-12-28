@@ -91,8 +91,8 @@ def display_menu():
   basemenu = load("basemenu.JPG", width, 3*width//4)
   screen.blit(basemenu, (0,height-3*width//4))
 
-  rtext(font, "Academia Anxieta", 20, 5)
-  rtext(font2, "It's got a better name now. ©2020 Bright Universe", height-40)
+  rtext(font, "Academia", 20, 5)
+  rtext(font2, "It's got an even better name now. ©2020-2021 Bright Universe", height-40)
 
 def nmap(val, omin, omax, rmin, rmax):
   return (float(val) - float(omin)) * (float(rmax) - float(rmin)) / (float(omax) - float(omin)) + float(rmin)
@@ -218,9 +218,18 @@ async def play(websocket, pdict, is_owner):
   meeting_called = 0
   textinput = ""
   flag = True
+  flg = False
   return_pressed = False
 
+  playerstoadd = None
+
   storage = []
+
+  curnum = -1
+  whodidit = None
+  should_vote = False
+
+  voted = {}
 
   while True:
     keys = pg.key.get_pressed()
@@ -249,6 +258,8 @@ async def play(websocket, pdict, is_owner):
             textinput = textinput[:-1]
           textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = textinput, myfont = fnt(15))
           pg.display.flip()
+      elif event.type == MOUSEBUTTONUP and meeting_called == 3 and curnum in range(len(playerstoadd)+1):
+        should_vote = True
 
     if keys[K_TAB] and is_owner:
       await websocket.send("finish")
@@ -258,7 +269,7 @@ async def play(websocket, pdict, is_owner):
       await websocket.send("leave")
       await websocket.recv()
       break
-    if keys[K_z] and meeting_called == 0:
+    if keys[K_z] and meeting_called == 0 and task == 1:
       meeting_called = 1
     if keys[K_RETURN] and meeting_called == 3:
       return_pressed = True
@@ -289,6 +300,78 @@ async def play(websocket, pdict, is_owner):
         elif update_render:
           flag = True
 
+    if meeting_called == 3:
+      mpx, mpy = pg.mouse.get_pos()
+      rightborder = 2*actualwidth//3
+      acceptstart = (((mpx - 10)// (rightborder // 5)) * rightborder//5 + 10)
+      acceptend = acceptstart + rightborder//5 - 3
+
+      acceptstart2 = (mpy - 10)//37 * 37 + 10
+      acceptend2 = acceptstart2 + 33
+
+      if mpx in range(acceptstart, acceptend) and mpy in range(acceptstart2, acceptend2) and (mpy - 10)//37 in range(20) and (mpx - 10)//(rightborder//5) in range(5):
+        num = 20*((mpx - 10)//(rightborder//5)) + (mpy - 10)//37
+        
+        if num in range(len(playerstoadd)):
+          if num != curnum:
+            pg.mouse.set_cursor(*pg.cursors.diamond)
+            curnum = num
+            flg = True
+        elif num == len(playerstoadd):
+          if num != curnum:
+            pg.mouse.set_cursor(*pg.cursors.diamond)
+            curnum = num
+            flg = True
+        else:
+          if num != curnum:
+            pg.mouse.set_cursor(*pg.cursors.arrow)
+            curnum = num
+            flg = True
+
+      elif curnum != -1:
+        curnum = -1
+        pg.mouse.set_cursor(*pg.cursors.arrow)
+        flg = True
+
+      if flg:
+        rightborder = 2*actualwidth//3
+        playerstoadd = list(pdict.keys())
+        i = 0
+        for x in range(5):
+          for pos in range(20):
+            call = False
+            col = [200, 200, 200]
+            if i < len(playerstoadd) and playerstoadd[i] == whodidit:
+              col = [252, 186, 3]
+              call = True
+            if myusername in voted:
+              if i < len(playerstoadd) and voted[myusername] == playerstoadd[i]:
+                if voted[myusername] == whodidit:
+                  col = [226, 235, 52]
+                else: col = [97, 235, 52]
+              elif i == len(playerstoadd) and voted[myusername] == "skip":
+                col = [97, 235, 52]
+            if i == curnum and i <= len(playerstoadd):
+              col = [min(255, k + 20) for k in col]
+            pg.draw.rect(screen, col, pg.Rect(x*rightborder//5 + 10, pos*37 + 10, rightborder//5 - 3, 33))
+            extra = ""
+            if call:
+              extra += "(Called) "
+            if i < len(playerstoadd) and playerstoadd[i] in voted:
+              extra += "(VOTED) "
+            if extra:
+              screen.blit(pg.font.Font("OpenSansEmoji.ttf", 10).render(extra, True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 28))
+            if i < len(playerstoadd):
+              e = pdict[playerstoadd[i]]
+              pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]))
+              screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render(e["nickname"], True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 12))
+              i+= 1
+            elif i == len(playerstoadd):
+              screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
+              i += 1
+        pg.display.flip()
+      flg = False
+      
     if spacestate and task not in completed and not doing_task and task != 1:
       doing_task = True
       relevant_entries = await globals()[prep[task]](screen, actualwidth, actualheight)
@@ -300,6 +383,10 @@ async def play(websocket, pdict, is_owner):
         elif meeting_called == 1: 
           payload = "emergency"
           meeting_called = 2
+        elif should_vote and meeting_called == 3:
+          should_vote = False
+          vote = playerstoadd + ["skip"]
+          payload = f"vote,{vote[curnum]}"
         elif meeting_called == 3 and len(textinput) and return_pressed:
           return_pressed = False
           payload = f"chat,{textinput}"
@@ -308,6 +395,8 @@ async def play(websocket, pdict, is_owner):
         else: payload = f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}"
         await websocket.send(payload)
         jsondata = await websocket.recv()
+        if "[" not in jsondata:
+          print(jsondata)
         data = json.loads(jsondata)
         handle_after = False
         for entry in data:
@@ -327,8 +416,8 @@ async def play(websocket, pdict, is_owner):
             rightborder = 2*actualwidth//3
             playerstoadd = list(pdict.keys())
             i = 0
-            for pos in range(20):
-              for x in range(5):
+            for x in range(5):
+              for pos in range(20):
                 if i < len(playerstoadd) and playerstoadd[i] == whodidit:
                   col = (252, 186, 3)
                 else: col = (200, 200, 200)
@@ -368,6 +457,9 @@ async def play(websocket, pdict, is_owner):
 
           elif entry[0] == "Task":
             task = entry[1]
+          elif entry[0] == "Vote":
+            voted[entry[1]] = entry[2]
+            flg = True
           elif entry[0] == "Players":
             if not flag:
               flag = True

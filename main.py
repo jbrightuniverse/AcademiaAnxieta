@@ -470,7 +470,7 @@ async def play(websocket, pdict, is_owner):
             temp = pg.transform.scale(temp, (width*MS, height*MS))
             screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
-            if task not in completed and (not pdict[myusername]["ghost"] or task != 1):
+            if task not in completed and (not pdict[myusername]["ghost"] or task != 1) and (not pdict[myusername]["impostor"] or task == 1):
                 overmap = tasks[task]
                 temp = pg.Surface((width, height), pg.SRCALPHA)
                 temp.blit(overmap, (0,0), pg.Rect(ox, oy, width, height))
@@ -498,12 +498,23 @@ async def play(websocket, pdict, is_owner):
                 mx = nmap(ex*MS - offsetx, 0, actualwidth, 0, width)
                 rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
+            by = 42
+            results = {}
+            ltext = f"TODO ({round(complete*100/total)}% total)"
+            maxwidth = font4.size(ltext)[0] + 4
+            if not pdict[myusername]["impostor"]:
+              for tsk in tasknames:
+                result = taskdesc[int(tsk)]
+                if tasknames[tsk]: result += " (Complete)"
+                results[tsk] = result
+                if font3.size(result)[0] + 4 > maxwidth:
+                  maxwidth = font3.size(result)[0] + 4
 
-            tasklist = pg.Surface((maxwidth, len(tasknames)*25 + 40), pg.SRCALPHA)
-            tasklist.fill((255, 255, 255, 220))
-            screen.blit(tasklist, (2, 2))
-            screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
-            for tsk in tasknames:
+              tasklist = pg.Surface((maxwidth, len(tasknames)*25 + 40), pg.SRCALPHA)
+              tasklist.fill((255, 255, 255, 220))
+              screen.blit(tasklist, (2, 2))
+              screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
+              for tsk in tasknames:
                 screen.blit(font3.render(results[tsk], True, [(215, 146, 146), (136, 255, 136)][tasknames[tsk]]), (2, by))
                 by += 25
 

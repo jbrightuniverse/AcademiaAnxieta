@@ -172,10 +172,9 @@ async def play(websocket, pdict, is_owner):
   if len(pdict) > 1:
     numbrc = (len(pdict) + 3)//10 + 1
   else: numbrc = 0
-  print(pdict[myusername]["impostor"])
   fade()
   delay(0.5)
-  rtext(fnt(200), "Student", actualheight//2 - 210)
+  rtext(fnt(200), ["Student", "BRC"][pdict[myusername]["impostor"]], actualheight//2 - 210)
   rtext(fnt(70), f"{numbrc} BRC lurk{['s', ''][numbrc != 1]} in the shadows...", actualheight//2 + 10)
   pg.display.flip()
   delay(2)

@@ -228,8 +228,12 @@ async def play(websocket, pdict, is_owner):
   curnum = -1
   whodidit = None
   should_vote = False
+  kick_player = False
+
+  endtime = 0
 
   voted = {}
+  bipflag = False
 
   while True:
     keys = pg.key.get_pressed()
@@ -369,7 +373,14 @@ async def play(websocket, pdict, is_owner):
             elif i == len(playerstoadd):
               screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
               i += 1
-        pg.display.flip()
+
+      pr = f"Time Remaining: {round(endtime - time.time())}s"
+      pg.draw.rect(screen, (255, 255, 255), pg.Rect(actualwidth//2 - fnt(20).size(pr)[0]//2 - 100, actualheight - 35, fnt(20).size(pr)[0] + 200, 30))
+      if round(endtime - time.time()) < 0:
+        kick_player = True
+      else:
+        screen.blit(fnt(20).render(pr, True, (255, 0, 0)), (actualwidth//2 - fnt(20).size(pr)[0]//2, actualheight-35))
+      pg.display.flip()
       flg = False
       
     if spacestate and task not in completed and not doing_task and task != 1:
@@ -407,6 +418,8 @@ async def play(websocket, pdict, is_owner):
           elif entry[0] == "Meeting":
             meettype = entry[1]
             whodidit = entry[2]
+            starttime = entry[3]
+            endtime = entry[4] + starttime
             meeting_called = 3
             rtext(font5, "TOWN", actualheight//2 - 105, color = (255, 0, 0))
             rtext(font5, "HALL", actualheight//2 + 5, color = (255, 0, 0))
@@ -433,6 +446,8 @@ async def play(websocket, pdict, is_owner):
                   screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
                   i += 1
             rtext(font2, "Discuss: who is it?", actualheight - 35, 2, color = (128, 128, 128))
+            pr = f"Time Remaining: {round(endtime - time.time())}s"
+            screen.blit(fnt(20).render(pr, True, (255, 0, 0)), (actualwidth//2 - fnt(20).size(pr)[0]//2, actualheight-35))
             screen.blit(font3.render("Press enter to send message.", True, (128, 128, 128)), (actualwidth - font3.size("Press enter to send message.")[0], actualheight-35))
             textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = "", myfont = fnt(15))
             pg.display.flip()
@@ -459,6 +474,8 @@ async def play(websocket, pdict, is_owner):
             task = entry[1]
           elif entry[0] == "Vote":
             voted[entry[1]] = entry[2]
+            if len(voted) == len(pdict):
+              kick_player = True
             flg = True
           elif entry[0] == "Players":
             if not flag:
@@ -549,7 +566,73 @@ async def play(websocket, pdict, is_owner):
 
         pg.display.flip()
 
-    flag = False
+      if kick_player:
+        screen.fill((255, 255, 255))
+        rightborder = 2*actualwidth//3
+        playerstoadd = list(pdict.keys())
+        i = 0
+        for x in range(5):
+          for pos in range(20):
+            call = False
+            col = [200, 200, 200]
+            if i < len(playerstoadd) and playerstoadd[i] == whodidit:
+              col = [252, 186, 3]
+              call = True
+            if myusername in voted:
+              if i < len(playerstoadd) and voted[myusername] == playerstoadd[i]:
+                if voted[myusername] == whodidit:
+                  col = [226, 235, 52]
+                else: col = [97, 235, 52]
+              elif i == len(playerstoadd) and voted[myusername] == "skip":
+                col = [97, 235, 52]
+            pg.draw.rect(screen, col, pg.Rect(x*rightborder//5 + 10, pos*37 + 10, rightborder//5 - 3, 33))
+            extra = ""
+            if call:
+              extra += "(Called) "
+            if i <= len(playerstoadd):
+              numvotes = list(voted.values()).count((playerstoadd+["skip"])[i])
+              if i == len(playerstoadd):
+                numvotes += len(playerstoadd) - len(voted)
+              extra += f"{numvotes} {['votes', 'vote'][numvotes == 1]}"
+            if extra:
+              screen.blit(pg.font.Font("OpenSansEmoji.ttf", 10).render(extra, True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 28))
+            if i < len(playerstoadd):
+              e = pdict[playerstoadd[i]]
+              pscale(pg.transform.scale(player, (20, 30)), x*rightborder//5 + 11, pos*37 + 11, (e["h"], e["s"], e["l"]))
+              screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render(e["nickname"], True, (0,0,0)), (x*rightborder//5 + 34, pos*37 + 12))
+              i+= 1
+            elif i == len(playerstoadd):
+              screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
+              i += 1
+        pg.display.flip()
+        time.sleep(2)
+        for i in range(100):
+          for event in pg.event.get():
+            if event.type == QUIT: 
+              sys.exit()
+          screen.fill((0, 0, 0, 50))
+          pg.display.flip()
+        time.sleep(2)
+        kick_player = False
+        meeting_called = 0
+        textinput = ""
+        flg = False
+        return_pressed = False
+        playerstoadd = None
+        storage = []
+        curnum = -1
+        whodidit = None
+        should_vote = False
+        kick_player = False
+        endtime = 0
+        voted = {}
+        bipflag = True
+
+    if not bipflag:
+      flag = False
+    else:
+      flag = True
+    bipflag = False
       
 
 async def lobby(websocket, data, is_owner):

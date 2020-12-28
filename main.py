@@ -108,7 +108,7 @@ pheight2 = 25*MS
 actualwidth = 1536
 actualheight = 801
 
-def pscale(player, x, y, col, rgb = False):
+def pscale(player, x, y, col, rgb = False, transp = 0):
   global size, width, height, actualwidth, actualheight
   dx = nmap(x, 0, actualwidth, 0, width)
   dy = nmap(y, 0, actualheight, 0, height)
@@ -120,6 +120,9 @@ def pscale(player, x, y, col, rgb = False):
   else:
     outputs = colorsys.hls_to_rgb(col[0]/360, col[2]/100, col[1]/100)
     pl.fill((outputs[0]*255, outputs[1]*255, outputs[2]*255), special_flags=pg.BLEND_RGB_MULT)
+  if transp:
+    pl = pl.copy()
+    pl.fill((255, 255, 255, 128), None, pg.BLEND_RGBA_MULT)
   screen.blit(pl, (int(round(dx)), int(round(dy))))
 
 myusername = None
@@ -424,7 +427,11 @@ async def play(websocket, pdict, is_owner):
             rtext(font5, "TOWN", actualheight//2 - 105, color = (255, 0, 0))
             rtext(font5, "HALL", actualheight//2 + 5, color = (255, 0, 0))
             pg.display.flip()
-            time.sleep(2.5)
+            a = time.time()
+            while time.time() - a < 2.5:
+              for event in pg.event.get():
+                if event.type == QUIT: 
+                  sys.exit()
             screen.fill((255, 255, 255))
             rightborder = 2*actualwidth//3
             playerstoadd = list(pdict.keys())
@@ -532,7 +539,7 @@ async def play(websocket, pdict, is_owner):
               todo = 1+whichleg
             else: todo = 0
             result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
-            pscale(result, e["x"]*MS-pwidth2//2 - offsetx, e["y"]*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]))
+            pscale(result, e["x"]*MS-pwidth2//2 - offsetx, e["y"]*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]), transp = e["ghost"])
             my = nmap(e["y"]*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
             mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
             rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
@@ -567,6 +574,7 @@ async def play(websocket, pdict, is_owner):
         pg.display.flip()
 
       if kick_player:
+        pg.mouse.set_cursor(*pg.cursors.arrow)
         screen.fill((255, 255, 255))
         rightborder = 2*actualwidth//3
         playerstoadd = list(pdict.keys())
@@ -605,14 +613,54 @@ async def play(websocket, pdict, is_owner):
               screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
               i += 1
         pg.display.flip()
-        time.sleep(2)
-        for i in range(100):
+        a = time.time()
+        while time.time() - a < 2:
           for event in pg.event.get():
             if event.type == QUIT: 
               sys.exit()
-          screen.fill((0, 0, 0, 50))
+        for i in range(400):
+          for event in pg.event.get():
+            if event.type == QUIT: 
+              sys.exit()
+          surf = pg.Surface((screen.get_width(), screen.get_height()), pg.SRCALPHA)
+          surf.fill((0, 0, 0, 5))
+          screen.blit(surf, (0,0))
           pg.display.flip()
-        time.sleep(2)
+        a = time.time()
+        while time.time() - a < 0.5:
+          for event in pg.event.get():
+            if event.type == QUIT: 
+              sys.exit()
+        votecounts = {}
+        for playerx in voted:
+          if voted[playerx] not in votecounts:
+            votecounts[voted[playerx]] = 0
+          else:
+            votecounts[voted[playerx]] += 1
+        maxnum = max(list(votecounts.values()))
+        highest = []
+        for playerx in votecounts:
+          if votecounts[playerx] == maxnum:
+            highest.append(playerx)
+        if len(highest) == 1:
+          if highest[0] == "skip":
+            phrase = "Nobody was expelled (skipped)."
+          else:
+            pdict[highest[0]]["ghost"] = 1
+            phrase = f"{pdict[highest[0]]['nickname']} was not a BRC."
+        else:
+          phrase = "Nobody was expelled (tie)."
+        fsize = 100
+        while fnt(fsize).size(phrase)[0] > width:
+          fsize -= 2
+        rtext(fnt(fsize), phrase, actualheight//2)
+        rtext(fnt(70), "0 BRC remain.", actualheight//2 + 130)
+        pg.display.flip()
+        a = time.time()
+        while time.time() - a < 2:
+          for event in pg.event.get():
+            if event.type == QUIT: 
+              sys.exit()
         kick_player = False
         meeting_called = 0
         textinput = ""

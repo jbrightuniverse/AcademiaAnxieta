@@ -1534,7 +1534,8 @@ async def mainmenu(websocket, inputs):
   data = inputs[0]
   appearance = inputs[2][1]
   textbox(3*height//8+5, 3*width//5, col = (114, 247, 247), text = "Enter Code", textcol = (0, 200, 200))
-  rtext(font2, f"Hi {appearance['nickname']} ({data[0]})", 105, color = (66, 245, 245))
+  try: rtext(font2, f"Hi {appearance['nickname']} ({data[0]})", 105, color = (66, 245, 245))
+  except: print(appearance)
   player = load("player.png", pwidth*2, pheight*2)
   pscale(player, 3*width//4, height//2, [appearance["h"], appearance["s"], appearance["l"]])
   #{'nickname': 'James', 'username': 'James', 'h': 189, 's': 100, 'l': 50, 'x': 590, 'y': 446, 'hat': 0, 'suit': 0, 'pet': 0, 'faculty': 0}

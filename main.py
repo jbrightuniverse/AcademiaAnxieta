@@ -226,20 +226,33 @@ async def play(websocket, pdict, is_owner):
   results = {}
   ltext = f"TODO ({round(complete*100/total)}% total)"
   maxwidth = font4.size(ltext)[0] + 4
-  for tsk in tasknames:
-    result = taskdesc[int(tsk)]
-    if tasknames[tsk]: result += " (Complete)"
-    results[tsk] = result
-    if font3.size(result)[0] + 4 > maxwidth:
-      maxwidth = font3.size(result)[0] + 4
+  if not pdict[myusername]["impostor"]:
+    for tsk in tasknames:
+      result = taskdesc[int(tsk)]
+      if tasknames[tsk]: result += " (Complete)"
+      results[tsk] = result
+      if font3.size(result)[0] + 4 > maxwidth:
+        maxwidth = font3.size(result)[0] + 4
 
-  tasklist = pg.Surface((maxwidth, len(tasknames)*25 + 40), pg.SRCALPHA)
-  tasklist.fill((255, 255, 255, 220))
-  screen.blit(tasklist, (2, 2))
-  screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
-  for tsk in tasknames:
-    screen.blit(font3.render(results[tsk], True, [(215, 146, 146), (136, 255, 136)][tasknames[tsk]]), (2, by))
+    tasklist = pg.Surface((maxwidth, len(tasknames)*25 + 40), pg.SRCALPHA)
+    tasklist.fill((255, 255, 255, 220))
+    screen.blit(tasklist, (2, 2))
+    screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
+    for tsk in tasknames:
+      screen.blit(font3.render(results[tsk], True, [(215, 146, 146), (136, 255, 136)][tasknames[tsk]]), (2, by))
+      by += 25
+
+  else:
+    tasklist = pg.Surface((maxwidth, 2*25 + 40), pg.SRCALPHA)
+    tasklist.fill((255, 255, 255, 220))
+    screen.blit(tasklist, (2, 2))
+    screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
+    screen.blit(font3.render("Ruin everyone as BRC.", True, (215, 146, 146)), (2, by))
     by += 25
+    diff = max(0, round(pdict[myusername]["killcooldown"] + globalkcool - time.time()))
+    if diff == 0: phr = "You can beam now."
+    else: phr = f"You can beam again in {diff}s."
+    screen.blit(font3.render(phr, True, (215, 146, 146)), (2, by))
 
   pg.display.flip()
   whichleg = True
@@ -550,14 +563,14 @@ async def play(websocket, pdict, is_owner):
               screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
               screen.blit(font3.render("Ruin everyone as BRC.", True, (215, 146, 146)), (2, by))
               by += 25
-              diff = max(0, round(pdict[myusername]["kcooldown"] + globalkcool - time.time()))
+              diff = max(0, round(pdict[myusername]["killcooldown"] + globalkcool - time.time()))
               if diff == 0: phr = "You can beam now."
               else: phr = f"You can beam again in {diff}s."
               screen.blit(font3.render(phr, True, (215, 146, 146)), (2, by))
 
             minimum = math.inf
             minname = None
-            if pdict[myusername]["impostor"] and round(pdict[myusername]["kcooldown"] + globalkcool - time.time()) <= 0:
+            if pdict[myusername]["impostor"] and round(pdict[myusername]["killcooldown"] + globalkcool - time.time()) <= 0:
               a = pdict[myusername]
               for opt in pdict:
                 if opt == myusername or pdict[opt]["ghost"]: continue
@@ -775,14 +788,14 @@ async def play(websocket, pdict, is_owner):
           screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
           screen.blit(font3.render("Ruin everyone as BRC.", True, (215, 146, 146)), (2, by))
           by += 25
-          diff = max(0, round(pdict[myusername]["kcooldown"] + globalkcool - time.time()))
+          diff = max(0, round(pdict[myusername]["killcooldown"] + globalkcool - time.time()))
           if diff == 0: phr = "You can beam now."
           else: phr = f"You can beam again in {diff}s."
           screen.blit(font3.render(phr, True, (215, 146, 146)), (2, by))
 
         minimum = math.inf
         minname = None
-        if pdict[myusername]["impostor"] and round(pdict[myusername]["kcooldown"] + globalkcool - time.time()) <= 0:
+        if pdict[myusername]["impostor"] and round(pdict[myusername]["killcooldown"] + globalkcool - time.time()) <= 0:
           a = pdict[myusername]
           for opt in pdict:
             if opt == myusername or pdict[opt]["ghost"]: continue

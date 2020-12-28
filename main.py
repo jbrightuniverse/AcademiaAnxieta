@@ -237,6 +237,8 @@ async def play(websocket, pdict, is_owner):
 
   voted = {}
   bipflag = False
+  lastx = 0
+  lasty = 0
 
   while True:
     keys = pg.key.get_pressed()
@@ -408,6 +410,73 @@ async def play(websocket, pdict, is_owner):
           textbox(height - 70, 2*width//3 + 30, wdth = 440, col = (114, 247, 247), text = "", myfont = fnt(15))  
         else: payload = f"move,{keys[K_DOWN]},{keys[K_UP]},{keys[K_LEFT]},{keys[K_RIGHT]},{spacestate}"
         await websocket.send(payload)
+        
+        if meeting_called != 3:
+            ofx = (16/2) * (keys[K_RIGHT] - keys[K_LEFT])
+            ofy = (16/2) * (keys[K_DOWN] - keys[K_UP])
+            if (keys[K_DOWN] or keys[K_UP] or keys[K_LEFT] or keys[K_RIGHT]) \
+              and (lastx == pdict[myusername]["x"]) and (lasty == pdict[myusername]["y"]):
+                  ofx = 0
+                  ofy = 0
+            lastx = pdict[myusername]["x"]
+            lasty = pdict[myusername]["y"]
+
+            px = pdict[myusername]["x"] + ofx
+            py = pdict[myusername]["y"] + ofy
+            offsetx = (px*MS - width//2)
+            offsety = (py*MS - height//2)
+
+            ox = (px - width//2)
+            oy = (py - height//2)
+            by = 42
+
+            screen.fill((0,0,0))
+            temp = pg.Surface((width, height))
+            temp.blit(mainmap, (0,0), pg.Rect(ox, oy, width, height))
+            temp = pg.transform.scale(temp, (width*MS, height*MS))
+            screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
+
+            if task not in completed and (not pdict[myusername]["ghost"] or task != 1):
+                overmap = tasks[task]
+                temp = pg.Surface((width, height), pg.SRCALPHA)
+                temp.blit(overmap, (0,0), pg.Rect(ox, oy, width, height))
+                temp = pg.transform.scale(temp, (width*MS, height*MS))
+                screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
+
+            for opt in pdict:
+                e = pdict[opt]
+                ex = None
+                ey = None
+                if opt == myusername:
+                    ex = e["x"] + ofx
+                    ey = e["y"] + ofy
+                else:
+                    ex = e["x"]
+                    ey = e["y"]
+                    
+                result = [[reverseplayer, player], [reversepwalking, pwalking], [reversepwalkingb, pwalkingb]][todo][e["f"]]
+                pscale(result, ex*MS-pwidth2//2 - offsetx, ey*MS-pheight2//2 - offsety, (e["h"], e["s"], e["l"]), transp = e["ghost"])
+                my = nmap(ey*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
+                mx = nmap(ex*MS - offsetx, 0, actualwidth, 0, width)
+                rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
+
+
+            tasklist = pg.Surface((maxwidth, len(tasknames)*25 + 40), pg.SRCALPHA)
+            tasklist.fill((255, 255, 255, 220))
+            screen.blit(tasklist, (2, 2))
+            screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
+            for tsk in tasknames:
+                screen.blit(font3.render(results[tsk], True, [(215, 146, 146), (136, 255, 136)][tasknames[tsk]]), (2, by))
+                by += 25
+
+            if doing_task:
+                screen.blit(prime, (0,0))
+            
+            if (time.time() - base) < 0.035:
+                await asyncio.sleep(0.035 - (time.time() - base))
+            
+            pg.display.flip()
+
         jsondata = await websocket.recv()
         if "[" not in jsondata:
           print(jsondata)
@@ -483,7 +552,7 @@ async def play(websocket, pdict, is_owner):
             task = entry[1]
           elif entry[0] == "Vote":
             voted[entry[1]] = entry[2]
-            if len(voted) + len([a for a in pdict if pdict[a]["ghost"]]) == len(pdict):
+            if len(voted) == len(pdict):
               kick_player = True
             flg = True
           elif entry[0] == "Players":
@@ -573,6 +642,8 @@ async def play(websocket, pdict, is_owner):
           screen.blit(prime, (0,0))
           await globals()[functions[task]](relevant_entries, screen, actualwidth, actualheight)
 
+        if (time.time() - base) < 0.07:
+            await asyncio.sleep((0.07) - (time.time() - base))
         pg.display.flip()
 
       if kick_player:
@@ -678,7 +749,6 @@ async def play(websocket, pdict, is_owner):
         endtime = 0
         voted = {}
         bipflag = True
-        task = 255
 
     if not bipflag:
       flag = False

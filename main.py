@@ -276,6 +276,7 @@ async def play(websocket, pdict, is_owner):
   lastx = 0
   lasty = 0
   globalminname = None
+  globalminrep = None
   globalkcool = 0
   globalitems = []
 
@@ -333,6 +334,9 @@ async def play(websocket, pdict, is_owner):
       globalitems.append(res[2])
       pdict[myusername]["x"] = pdict[globalminname['username']]["x"]
       pdict[myusername]["y"] = pdict[globalminname['username']]["y"]
+
+    if keys[K_r] and meeting_called == 0 and not pdict[myusername]["ghost"] and globalminrep:
+      meeting_called = 0.5
 
     if doing_task:
       mpx, mpy = pg.mouse.get_pos()
@@ -540,34 +544,54 @@ async def play(websocket, pdict, is_owner):
                 by += 25
 
             else:
-              tasklist = pg.Surface((maxwidth, 65), pg.SRCALPHA)
+              tasklist = pg.Surface((maxwidth, 2*25 + 40), pg.SRCALPHA)
               tasklist.fill((255, 255, 255, 220))
               screen.blit(tasklist, (2, 2))
               screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
               screen.blit(font3.render("Ruin everyone as BRC.", True, (215, 146, 146)), (2, by))
+              by += 25
+              diff = max(0, round(pdict[myusername]["kcooldown"] + globalkcool - time.time()))
+              if diff == 0: phr = "You can beam now."
+              else: phr = f"You can beam again in {diff}s."
+              screen.blit(font3.render(phr, True, (215, 146, 146)), (2, by))
 
             minimum = math.inf
             minname = None
-            if pdict[myusername]["impostor"]:
+            if pdict[myusername]["impostor"] and round(pdict[myusername]["kcooldown"] + globalkcool - time.time()) <= 0:
               a = pdict[myusername]
               for opt in pdict:
-                if opt == myusername: continue
+                if opt == myusername or pdict[opt]["ghost"]: continue
                 b = pdict[opt]
                 dist = (a["x"] - b["x"])**2 + (a["y"] - b["y"])**2
                 if dist < a["krange"]**2 and dist < minimum:
                   minimum = dist
                   minname = b
+
+            minrep = math.inf
+            namerep = None
+            if not pdict[myusername]["ghost"]:
+              a = pdict[myusername]
+              for b in globalitems:
+                dist = (a["x"] - b["x"])**2 + (a["y"] - b["y"])**2
+                if dist < 48**2 and dist < minrep:
+                  minrep = dist
+                  namerep = b
+
             globalminname = minname
+            globalminrep = namerep
 
             pg.draw.rect(screen, (128, 128, 128), pg.Rect(actualwidth//2 - 300, actualheight - 100, 600, 70))
             has = False
-            if task == 1 and not pdict[myusername]["ghost"]:
+            if globalminrep and not pdict[myusername]["ghost"]:
+              has = True
+              rtext(fnt(30), "Press R to report", actualheight - 98)
+            if task == 1 and not pdict[myusername]["ghost"] and not has:
               rtext(fnt(30), "Press SPACE to call meeting", actualheight - 98)
               has = True
-            elif task not in [0, 1, 255] and not pdict[myusername]["impostor"]:
+            elif task not in [0, 1, 255] and not pdict[myusername]["impostor"] and not has:
               rtext(fnt(30), "Press SPACE to do task", actualheight - 98)
-            if pdict[myusername]["impostor"] and minname and not pdict[myusername]["ghost"]:
-              rtext(fnt(30), f"Press Q to beam {minname['nickname']}", [actualheight - 104, actualheight - 64][has])
+            if pdict[myusername]["impostor"] and globalminname and not pdict[myusername]["ghost"]:
+              rtext(fnt(30), f"Press Q to beam {globalminname['nickname']}", [actualheight - 104, actualheight - 64][has])
 
             if doing_task:
               screen.blit(prime, (0,0))
@@ -745,33 +769,53 @@ async def play(websocket, pdict, is_owner):
             by += 25
 
         else:
-          tasklist = pg.Surface((maxwidth, 65), pg.SRCALPHA)
+          tasklist = pg.Surface((maxwidth, 2*25 + 40), pg.SRCALPHA)
           tasklist.fill((255, 255, 255, 220))
           screen.blit(tasklist, (2, 2))
           screen.blit(font4.render(ltext, True, (0,0,0)), (2, 2))
           screen.blit(font3.render("Ruin everyone as BRC.", True, (215, 146, 146)), (2, by))
+          by += 25
+          diff = max(0, round(pdict[myusername]["kcooldown"] + globalkcool - time.time()))
+          if diff == 0: phr = "You can beam now."
+          else: phr = f"You can beam again in {diff}s."
+          screen.blit(font3.render(phr, True, (215, 146, 146)), (2, by))
 
         minimum = math.inf
         minname = None
-        if pdict[myusername]["impostor"] and not pdict[myusername]["ghost"]:
+        if pdict[myusername]["impostor"] and round(pdict[myusername]["kcooldown"] + globalkcool - time.time()) <= 0:
           a = pdict[myusername]
           for opt in pdict:
-            if opt == myusername: continue
+            if opt == myusername or pdict[opt]["ghost"]: continue
             b = pdict[opt]
             dist = (a["x"] - b["x"])**2 + (a["y"] - b["y"])**2
             if dist < a["krange"]**2 and dist < minimum:
               minimum = dist
               minname = b
+
+        minrep = math.inf
+        namerep = None
+        if not pdict[myusername]["ghost"]:
+          a = pdict[myusername]
+          for b in globalitems:
+            dist = (a["x"] - b["x"])**2 + (a["y"] - b["y"])**2
+            if dist < 48**2 and dist < minrep:
+              minrep = dist
+              namerep = b
+
         globalminname = minname
+        globalminrep = namerep
 
         pg.draw.rect(screen, (128, 128, 128), pg.Rect(actualwidth//2 - 300, actualheight - 100, 600, 70))
         has = False
-        if task == 1 and not pdict[myusername]["ghost"]:
+        if globalminrep and not pdict[myusername]["ghost"]:
+          has = True
+          rtext(fnt(30), "Press R to report", actualheight - 98)
+        if task == 1 and not pdict[myusername]["ghost"] and not has:
           rtext(fnt(30), "Press SPACE to call meeting", actualheight - 98)
           has = True
-        elif task not in [0, 1, 255] and not pdict[myusername]["impostor"]:
+        elif task not in [0, 1, 255] and not pdict[myusername]["impostor"] and not has:
           rtext(fnt(30), "Press SPACE to do task", actualheight - 98)
-        if pdict[myusername]["impostor"] and minname and not pdict[myusername]["ghost"]:
+        if pdict[myusername]["impostor"] and globalminname and not pdict[myusername]["ghost"]:
           rtext(fnt(30), f"Press Q to beam {minname['nickname']}", [actualheight - 104, actualheight - 64][has])
 
         if doing_task:

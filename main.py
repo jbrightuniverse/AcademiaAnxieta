@@ -481,6 +481,7 @@ async def play(websocket, pdict, is_owner):
                 e = pdict[opt]
                 ex = None
                 ey = None
+                if not pdict[myusername]["ghost"] and e["ghost"]: continue
                 if opt == myusername:
                     ex = e["x"] + ofx
                     ey = e["y"] + ofy

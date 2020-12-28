@@ -280,7 +280,7 @@ async def play(websocket, pdict, is_owner):
   globalitems = []
 
   while True:
-    keys = list(pg.key.get_pressed())
+    keys = pg.key.get_pressed()
     spacestate = 0
     for event in pg.event.get():
       if event.type == QUIT: 
@@ -445,10 +445,6 @@ async def play(websocket, pdict, is_owner):
       flag = True
 
     if time.time() - base >= 0.07 or flag:
-      keys[K_DOWN] = keys[K_DOWN] or keys[K_s]
-      keys[K_UP] = keys[K_UP] or keys[K_w]
-      keys[K_LEFT] = keys[K_LEFT] or keys[K_a]
-      keys[K_RIGHT] = keys[K_RIGHT] or keys[K_d]
       if time.time() - base >= 0.07:
         if doing_task: payload = f"move,0,0,0,0,0"
         elif meeting_called == 1: 

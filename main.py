@@ -494,6 +494,9 @@ async def play(websocket, pdict, is_owner):
                 temp = pg.transform.scale(temp, (width*MS, height*MS))
                 screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
+            for e in globalitems:
+              pscale(oof, e["x"]*MS-oof.get_width()//2 - offsetx, e["y"]*MS-oof.get_width()//2 - offsety, (e["h"], e["s"], e["l"]))
+
             for opt in pdict:
                 e = pdict[opt]
                 ex = None
@@ -515,8 +518,6 @@ async def play(websocket, pdict, is_owner):
                 mx = nmap(ex*MS - offsetx, 0, actualwidth, 0, width)
                 rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
-            for e in globalitems:
-              pscale(oof, e["x"]*MS-oof.get_width()//2 - offsetx, e["y"]*MS-oof.get_width()//2 - offsety, (e["h"], e["s"], e["l"]))
 
             by = 42
             results = {}
@@ -588,6 +589,7 @@ async def play(websocket, pdict, is_owner):
           elif entry[0] == "Owner":
             is_owner = True
           elif entry[0] == "Meeting":
+            globalitems = []
             meettype = entry[1]
             whodidit = entry[2]
             starttime = entry[3]
@@ -703,6 +705,9 @@ async def play(websocket, pdict, is_owner):
           temp = pg.transform.scale(temp, (width*MS, height*MS))
           screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
+        for e in globalitems:
+          pscale(oof, e["x"]*MS-oof.get_width()//2 - offsetx, e["y"]*MS-oof.get_width()//2 - offsety, (e["h"], e["s"], e["l"]))
+
         for opt in pdict:
           e = pdict[opt]
           if e["x"]*MS in range(offsetx, offsetx + width) and e["y"]*MS in range(offsety, offsety + height) and (pdict[myusername]["ghost"] or not e["ghost"]):
@@ -714,9 +719,6 @@ async def play(websocket, pdict, is_owner):
             my = nmap(e["y"]*MS-50-pheight2//2 - offsety, 0, actualheight, 0, height)
             mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
             rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
-
-        for e in globalitems:
-          pscale(oof, e["x"]*MS-oof.get_width()//2 - offsetx, e["y"]*MS-oof.get_width()//2 - offsety, (e["h"], e["s"], e["l"]))
 
         tasknames = pdict[myusername]["tasks"]
         total = len(tasknames) * len(pdict)

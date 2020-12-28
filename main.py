@@ -138,6 +138,23 @@ for i in range(256):
 mainmap = load("maps/ubc.png", bound = True)
 prime = taskbase(actualwidth, actualheight)
 
+def fade():
+  global screen
+  for i in range(400):
+    for event in pg.event.get():
+      if event.type == QUIT: 
+        sys.exit()
+    surf = pg.Surface((screen.get_width(), screen.get_height()), pg.SRCALPHA)
+    surf.fill((0, 0, 0, 5))
+    screen.blit(surf, (0,0))
+    pg.display.flip()
+
+def delay(s):
+  a = time.time()
+  while time.time() - a < s:
+    for event in pg.event.get():
+      if event.type == QUIT: 
+        sys.exit()
 
 async def play(websocket, pdict, is_owner):
   global screen, size, width, height, myusername, actualwidth, actualheight
@@ -152,6 +169,17 @@ async def play(websocket, pdict, is_owner):
           for key in entry[1][player]:
             pdict[player][key] = entry[1][player][key]
   
+  if len(pdict) > 1:
+    numbrc = (len(pdict) + 3)//10 + 1
+  else: numbrc = 0
+  print(pdict[myusername]["impostor"])
+  fade()
+  delay(0.5)
+  rtext(fnt(200), "Student", actualheight//2 - 210)
+  rtext(fnt(70), f"{numbrc} BRC lurk{['s', ''][numbrc != 1]} in the shadows...", actualheight//2 + 10)
+  pg.display.flip()
+  delay(2)
+
   offsetx = (pdict[myusername]["x"]*MS - width//2)
   offsety = (pdict[myusername]["y"]*MS - height//2)
   ox = (pdict[myusername]["x"] - width//2)
@@ -496,11 +524,7 @@ async def play(websocket, pdict, is_owner):
             rtext(font5, "TOWN", actualheight//2 - 105, color = (255, 0, 0))
             rtext(font5, "HALL", actualheight//2 + 5, color = (255, 0, 0))
             pg.display.flip()
-            a = time.time()
-            while time.time() - a < 2.5:
-              for event in pg.event.get():
-                if event.type == QUIT: 
-                  sys.exit()
+            delay(2.5)
             screen.fill((255, 255, 255))
             rightborder = 2*actualwidth//3
             playerstoadd = list(pdict.keys())
@@ -687,24 +711,9 @@ async def play(websocket, pdict, is_owner):
               screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Skip Vote", True, (0,0,0)), (x*rightborder//5 +  12, pos*37 + 12))
               i += 1
         pg.display.flip()
-        a = time.time()
-        while time.time() - a < 2:
-          for event in pg.event.get():
-            if event.type == QUIT: 
-              sys.exit()
-        for i in range(400):
-          for event in pg.event.get():
-            if event.type == QUIT: 
-              sys.exit()
-          surf = pg.Surface((screen.get_width(), screen.get_height()), pg.SRCALPHA)
-          surf.fill((0, 0, 0, 5))
-          screen.blit(surf, (0,0))
-          pg.display.flip()
-        a = time.time()
-        while time.time() - a < 0.5:
-          for event in pg.event.get():
-            if event.type == QUIT: 
-              sys.exit()
+        delay(2)
+        fade()
+        delay(0.5)
         votecounts = {}
         for playerx in voted:
           if voted[playerx] not in votecounts:
@@ -730,11 +739,7 @@ async def play(websocket, pdict, is_owner):
         rtext(fnt(fsize), phrase, actualheight//2)
         rtext(fnt(70), "0 BRC remain.", actualheight//2 + 130)
         pg.display.flip()
-        a = time.time()
-        while time.time() - a < 2:
-          for event in pg.event.get():
-            if event.type == QUIT: 
-              sys.exit()
+        delay(2)
         kick_player = False
         meeting_called = 0
         textinput = ""

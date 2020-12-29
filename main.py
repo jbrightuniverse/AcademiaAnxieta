@@ -783,6 +783,8 @@ async def play(websocket, pdict, is_owner):
           winflag = 2
         elif len(pdict) > 2 and len([p for p in pdict if pdict[p]["impostor"] and not pdict[p]["ghost"]]) == len([p for p in pdict if not pdict[p]["impostor"] and not pdict[p]["ghost"]]):
           winflag = 2
+        elif len(pdict) > 1 and len([p for p in pdict if pdict[p]["impostor"] and not pdict[p]["ghost"]]) == 0:
+          winflag = 1
 
         tasknames = pdict[myusername]["tasks"]
         total = len(tasknames) * len([p for p in pdict if not pdict[p]["impostor"]])

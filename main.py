@@ -702,7 +702,7 @@ async def play(websocket, pdict, is_owner):
             task = entry[1]
           elif entry[0] == "Vote":
             voted[entry[1]] = entry[2]
-            if len(voted) == len(pdict):
+            if len(voted) + len([a for a in pdict if pdict[a]["ghost"]]) == len(pdict):
               kick_player = True
             flg = True
           elif entry[0] == "Beamed":

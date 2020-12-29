@@ -219,8 +219,8 @@ async def play(websocket, pdict, is_owner):
       rtext(thefont, e["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
   tasknames = pdict[myusername]["tasks"]
-  total = len(tasknames) * len(pdict)
-  complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict])
+  total = len(tasknames) * len([p for p in pdict if not pdict[p]["impostor"]])
+  complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict if not pdict[u]["impostor"]])
 
   by = 42
   results = {}
@@ -331,15 +331,16 @@ async def play(websocket, pdict, is_owner):
       await websocket.send("leave")
       await websocket.recv()
       break
-    if spacestate and meeting_called == 0 and task == 1 and not pdict[myusername]["ghost"]:
-      meeting_called = 1
+
     if keys[K_RETURN] and meeting_called == 3:
       return_pressed = True
 
-    if keys[K_q] and pdict[myusername]["impostor"] and not pdict[myusername]["ghost"] and globalminname and time.time() > pdict[myusername]["killcooldown"] + globalkcool:
+    if spacestate and meeting_called == 0 and task == 1 and not pdict[myusername]["ghost"]:
+      meeting_called = 1
+
+    elif keys[K_q] and pdict[myusername]["impostor"] and not pdict[myusername]["ghost"] and globalminname and time.time() > pdict[myusername]["killcooldown"] + globalkcool:
       await websocket.send(f"kek,{globalminname['username']}")
       res = await websocket.recv()
-      print(res)
       res = json.loads(res)
       pdict[myusername]["killcooldown"] = res[0]
       globalkcool = res[1]
@@ -348,7 +349,7 @@ async def play(websocket, pdict, is_owner):
       pdict[myusername]["x"] = pdict[globalminname['username']]["x"]
       pdict[myusername]["y"] = pdict[globalminname['username']]["y"]
 
-    if keys[K_r] and meeting_called == 0 and not pdict[myusername]["ghost"] and globalminrep:
+    elif keys[K_r] and meeting_called == 0 and not pdict[myusername]["ghost"] and globalminrep:
       meeting_called = 0.5
 
     if doing_task:
@@ -467,6 +468,9 @@ async def play(websocket, pdict, is_owner):
         elif meeting_called == 1: 
           payload = "emergency"
           meeting_called = 2
+        elif meeting_called == 0.5:
+          payload = f"report,{globalminrep['x']},{globalminrep['y']}"
+          meeting_called = 2
         elif should_vote and meeting_called == 3 and not pdict[myusername]["ghost"]:
           should_vote = False
           vote = playerstoadd + ["skip"]
@@ -535,6 +539,9 @@ async def play(websocket, pdict, is_owner):
                 mx = nmap(ex*MS - offsetx, 0, actualwidth, 0, width)
                 rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
+            tasknames = pdict[myusername]["tasks"]
+            total = len(tasknames) * len([p for p in pdict if not pdict[p]["impostor"]])
+            complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict if not pdict[u]["impostor"]])
 
             by = 42
             results = {}
@@ -632,8 +639,14 @@ async def play(websocket, pdict, is_owner):
             starttime = entry[3]
             endtime = entry[4] + starttime
             meeting_called = 3
-            rtext(font5, "TOWN", actualheight//2 - 105, color = (255, 0, 0))
-            rtext(font5, "HALL", actualheight//2 + 5, color = (255, 0, 0))
+            if entry[1] == 1:
+              rtext(font5, "TOWN", actualheight//2 - 105, color = (255, 0, 0))
+              rtext(font5, "HALL", actualheight//2 + 5, color = (255, 0, 0))
+            elif entry[1] == 2:
+              rtext(font5, "BURNOUT", actualheight//2 - 105, color = (255, 0, 0))
+              rtext(font5, "REPORTED", actualheight//2 + 5, color = (255, 0, 0))
+              e = entry[5]
+              pscale(pg.transform.scale(oof, (150, 100)), actualwidth//2 - 75, actualheight//2 + 105, (e["h"], e["s"], e["l"]))
             pg.display.flip()
             delay(2.5)
             screen.fill((255, 255, 255))
@@ -758,8 +771,8 @@ async def play(websocket, pdict, is_owner):
             rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
         tasknames = pdict[myusername]["tasks"]
-        total = len(tasknames) * len(pdict)
-        complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict])
+        total = len(tasknames) * len([p for p in pdict if not pdict[p]["impostor"]])
+        complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict if not pdict[u]["impostor"]])
 
         by = 42
         results = {}

@@ -706,7 +706,13 @@ async def play(websocket, pdict, is_owner):
               kick_player = True
             flg = True
           elif entry[0] == "Beamed":
-            pass # do some animation
+            surf = pg.Surface((actualwidth, actualheight), pg.SRCALPHA)
+            surf.fill((255, 0, 0, 128))
+            screen.blit(surf, (0,0))
+            rtext(fnt(100), "You got beamed.", actualheight//2 - 50, color = (255, 255, 255))
+            pg.display.flip()
+            delay(2.5)
+            pdict[myusername]["ghost"] = 1
           elif entry[0] == "Item":
             globalitems.append(entry[1])
           elif entry[0] == "Players":

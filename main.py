@@ -284,7 +284,7 @@ async def play(websocket, pdict, is_owner):
   kick_player = False
 
   endtime = 0
-
+  winflag = 0
   voted = {}
   bipflag = False
   lastx = 0
@@ -324,22 +324,13 @@ async def play(websocket, pdict, is_owner):
       elif event.type == MOUSEBUTTONUP and meeting_called == 3 and curnum in range(len(playerstoadd)+1) and (curnum == len(playerstoadd) or not pdict[playerstoadd[curnum]]["ghost"]):
         should_vote = True
 
-    if keys[K_TAB] and is_owner:
-      await websocket.send("finish")
-      res = await websocket.recv()
-      return [res, is_owner]
-    if keys[K_ESCAPE]:
-      await websocket.send("leave")
-      await websocket.recv()
-      break
-
     if keys[K_RETURN] and meeting_called == 3:
       return_pressed = True
 
     if spacestate and meeting_called == 0 and task == 1 and not pdict[myusername]["ghost"]:
       meeting_called = 1
 
-    elif keys[K_q] and pdict[myusername]["impostor"] and not pdict[myusername]["ghost"] and globalminname and time.time() > pdict[myusername]["killcooldown"] + globalkcool:
+    elif keys[K_q] and meeting_called == 0 and pdict[myusername]["impostor"] and not pdict[myusername]["ghost"] and globalminname and time.time() > pdict[myusername]["killcooldown"] + globalkcool:
       await websocket.send(f"kek,{globalminname['username']}")
       res = await websocket.recv()
       res = json.loads(res)
@@ -540,6 +531,11 @@ async def play(websocket, pdict, is_owner):
                 mx = nmap(ex*MS - offsetx, 0, actualwidth, 0, width)
                 rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
+            if len(pdict) == 2 and len([p for p in pdict if pdict[p]["impostor"] and not pdict[p]["ghost"]]) == 1 and len([p for p in pdict if not pdict[p]["impostor"] and pdict[p]["ghost"]]) == 1:
+              winflag = 2
+            elif len(pdict) > 2 and len([p for p in pdict if pdict[p]["impostor"] and not pdict[p]["ghost"]]) == len([p for p in pdict if not pdict[p]["impostor"] and not pdict[p]["ghost"]]):
+              winflag = 2
+
             tasknames = pdict[myusername]["tasks"]
             total = len(tasknames) * len([p for p in pdict if not pdict[p]["impostor"]])
             complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict if not pdict[u]["impostor"]])
@@ -548,6 +544,10 @@ async def play(websocket, pdict, is_owner):
             results = {}
             try: ltext = f"TODO ({round(complete*100/total)}% total)"
             except: ltext = "TODO (100% total)"
+            try: num = round(complete*100/total)
+            except: num = 100
+            if num == 100:
+              winflag = 1
             maxwidth = font4.size(ltext)[0] + 4
             if not pdict[myusername]["impostor"]:
               for tsk in tasknames:
@@ -716,6 +716,7 @@ async def play(websocket, pdict, is_owner):
           elif entry[0] == "Item":
             globalitems.append(entry[1])
           elif entry[0] == "Players":
+            print(entry)
             if not flag:
               flag = True
             for opt in entry[1]:
@@ -778,10 +779,18 @@ async def play(websocket, pdict, is_owner):
             mx = nmap(e["x"]*MS - offsetx, 0, actualwidth, 0, width)
             rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
 
+        if len(pdict) == 2 and len([p for p in pdict if pdict[p]["impostor"] and not pdict[p]["ghost"]]) == 1 and len([p for p in pdict if not pdict[p]["impostor"] and pdict[p]["ghost"]]) == 1:
+          winflag = 2
+        elif len(pdict) > 2 and len([p for p in pdict if pdict[p]["impostor"] and not pdict[p]["ghost"]]) == len([p for p in pdict if not pdict[p]["impostor"] and not pdict[p]["ghost"]]):
+          winflag = 2
+
         tasknames = pdict[myusername]["tasks"]
         total = len(tasknames) * len([p for p in pdict if not pdict[p]["impostor"]])
         complete = sum([sum([1 for t in pdict[u]["tasks"] if pdict[u]["tasks"][t]]) for u in pdict if not pdict[u]["impostor"]])
-
+        try: num = round(complete*100/total)
+        except: num = 100
+        if num == 100:
+          winflag = 1
         by = 42
         results = {}
         try: ltext = f"TODO ({round(complete*100/total)}% total)"
@@ -934,6 +943,11 @@ async def play(websocket, pdict, is_owner):
         rtext(fnt(70), f"{numbrc} BRC remain{['s', ''][numbrc != 1]}", actualheight//2 + 130)
         pg.display.flip()
         delay(2)
+        if len(pdict) == 2 and len([p for p in pdict if pdict[p]["impostor"] and not pdict[p]["ghost"]]) == 1 and len([p for p in pdict if not pdict[p]["impostor"] and pdict[p]["ghost"]]) == 1:
+          winflag = 2
+        elif len(pdict) > 2 and len([p for p in pdict if pdict[p]["impostor"] and not pdict[p]["ghost"]]) == len([p for p in pdict if not pdict[p]["impostor"] and not pdict[p]["ghost"]]):
+          winflag = 2
+        
         kick_player = False
         meeting_called = 0
         textinput = ""
@@ -948,6 +962,23 @@ async def play(websocket, pdict, is_owner):
         endtime = 0
         voted = {}
         bipflag = True
+
+    if winflag != 0:
+      fade()
+      if pdict[myusername]["impostor"] == 1 - (winflag - 1):
+        rtext(fnt(100), "Lost", actualheight//2 - 110, color = (255, 0, 0))
+        if winflag == 2: rtext(fnt(15), f"Impostors: {', '.join([pdict[p]['nickname'] for p in pdict if pdict[p]['impostor']])}", actualheight//2, color = (255, 255, 255))
+      else: 
+        rtext(fnt(100), "Won", actualheight//2 - 110, color = (255, 255, 255))
+        if winflag == 1: rtext(fnt(15), f"Impostors: {', '.join([pdict[p]['nickname'] for p in pdict if pdict[p]['impostor']])}", actualheight//2, color = (255, 255, 255))
+      pg.display.flip()
+      delay(3)
+      if is_owner:
+        await websocket.send("finish")
+      else:
+        await websocket.send("move,0,0,0,0,0")
+      res = await websocket.recv()
+      return [res, is_owner]
 
     if not bipflag:
       flag = False
@@ -970,6 +1001,7 @@ async def lobby(websocket, data, is_owner):
       is_owner = True
       del data[i]
       break
+
   game = data[0][1]
   players = data[1][1]
   blounge = load("lounge_temp.png", width, height)
@@ -998,6 +1030,10 @@ async def lobby(websocket, data, is_owner):
     my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
     mx = nmap(e["x"], 0, actualwidth, 0, width)
     rtext(thefont, pdict[entry]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
+
+  if is_owner:
+    rtext(fnt(30), "Press ENTER to start the game.", actualheight - 40, color = (0, 0, 255))
+  
   pg.display.flip()
   whichleg = True
   while True:
@@ -1041,6 +1077,12 @@ async def lobby(websocket, data, is_owner):
           del pdict[entry[1]]
           flag = True
           print(f"{entry[1]} left the game.")
+      await websocket.send("force")
+      res = await websocket.recv()
+      d = json.loads(res)
+      for entry in d:
+        for key in d[entry]:
+          pdict[entry][key] = d[entry][key]
 
     if keys[K_ESCAPE]:
       await websocket.send("leave")
@@ -1110,6 +1152,12 @@ async def lobby(websocket, data, is_owner):
           del pdict[entry[1]]
           flag = True
           print(f"{entry[1]} left the game.")
+      await websocket.send("force")
+      res = await websocket.recv()
+      d = json.loads(res)
+      for entry in d:
+        for key in d[entry]:
+          pdict[entry][key] = d[entry][key]
 
     if flag:
       screen.blit(blounge, (0, 0))
@@ -1125,6 +1173,9 @@ async def lobby(websocket, data, is_owner):
         my = nmap(e["y"]-50-pheight//2, 0, actualheight, 0, height)
         mx = nmap(e["x"], 0, actualwidth, 0, width)
         rtext(thefont, pdict[opt]["nickname"], int(round(my)), int(round(mx)), color = (128,128,128), ctr = True)
+
+        if is_owner:
+          rtext(fnt(30), "Press ENTER to start the game.", actualheight - 40, color = (0, 0, 255))
       pg.display.flip()
     await asyncio.sleep(0.07)
 

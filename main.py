@@ -224,7 +224,7 @@ async def play(websocket, pdict, is_owner):
 
   by = 42
   results = {}
-  ltext = f"TODO ({round(complete*100/total)}% total)"
+  try: ltext = f"TODO ({round(complete*100/total)}% total)"
   except: ltext = "TODO (100% total)"
   maxwidth = font4.size(ltext)[0] + 4
   if not pdict[myusername]["impostor"]:
@@ -546,7 +546,7 @@ async def play(websocket, pdict, is_owner):
 
             by = 42
             results = {}
-            ltext = f"TODO ({round(complete*100/total)}% total)"
+            try: ltext = f"TODO ({round(complete*100/total)}% total)"
             except: ltext = "TODO (100% total)"
             maxwidth = font4.size(ltext)[0] + 4
             if not pdict[myusername]["impostor"]:

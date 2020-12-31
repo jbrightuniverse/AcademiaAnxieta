@@ -11,6 +11,7 @@ from pygame.locals import *
 import time
 import websockets
 import traceback
+import importlib
 
 import numpy as np
 
@@ -131,7 +132,7 @@ from taskmod import *
 
 tasks = []
 for i in range(256):
-  if i in [1, 128]:
+  if i in [1, 128, 200]:
     tasks.append(load(f"maps/tasks/{i}.png", bound = True))
   else: tasks.append(None)
 
@@ -344,6 +345,12 @@ async def play(websocket, pdict, is_owner):
     elif keys[K_r] and meeting_called == 0 and not pdict[myusername]["ghost"] and globalminrep:
       meeting_called = 0.5
 
+    if keys[K_TAB]:
+      importlib.reload(sys.modules["taskmod"])
+      kys = " ".join(sys.modules["taskmod"].__dict__.keys()).split("fill ")[-1].split(" ")
+      for key in kys:
+        globals()[key] = getattr(sys.modules["taskmod"], key)
+
     if doing_task:
       mpx, mpy = pg.mouse.get_pos()
       def collide(x, y):
@@ -451,7 +458,7 @@ async def play(websocket, pdict, is_owner):
       
     if spacestate and task not in completed and not doing_task and task != 1 and not pdict[myusername]["impostor"]:
       doing_task = True
-      relevant_entries = await globals()[prep[task]](screen, actualwidth, actualheight)
+      relevant_entries = await globals()[prep[task]](screen, actualwidth, actualheight, pdict[myusername])
       flag = True
 
     if time.time() - base >= 0.07 or flag:
@@ -716,7 +723,6 @@ async def play(websocket, pdict, is_owner):
           elif entry[0] == "Item":
             globalitems.append(entry[1])
           elif entry[0] == "Players":
-            print(entry)
             if not flag:
               flag = True
             for opt in entry[1]:
@@ -1823,6 +1829,10 @@ async def program():
   global screen, size, width, height, font, font2
   uri = f"ws://rq2.duckdns.org:8765"
   try:
+    importlib.reload(sys.modules["taskmod"])
+    kys = " ".join(sys.modules["taskmod"].__dict__.keys()).split("fill ")[-1].split(" ")
+    for key in kys:
+      globals()[key] = getattr(sys.modules["taskmod"], key)
     async with websockets.connect(uri) as websocket:
       
       display_menu()
@@ -1971,11 +1981,64 @@ async def program():
         await asyncio.sleep(0.03)
   except Exception as error:
     if "code = 1000 (OK), no reason" not in str(error) and "code = 1006" not in str(error) and "code = 1011" not in str(error):
-      print("".join(traceback.format_exception(type(error), error, error.__traceback__, 999)))
-      return ""
-    if "code" in str(error):
-      return "Internal server error. Please try again later. "
-    return "Client error. Please try again later. "
+      tb = "".join(traceback.format_exception(type(error), error, error.__traceback__, 999))
+      return tb.split("File ")[-1].split(" ")[0].split("\\")[-1].split("\"")[0], tb
 
-resstate = asyncio.get_event_loop().run_until_complete(program())
-print(resstate)
+    return "main.py", "ServerError: internal server error"
+
+while True:
+  resstate = asyncio.get_event_loop().run_until_complete(program())
+  screen.fill((0, 0, 128))
+  i = 2
+  buf = 27
+  screen.blit(fnt(25).render("A problem has been detected and Academia has been shut down to prevent damage to your computer.", True, (255,255,255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render(f"The problem seems to be caused by the following file: {resstate[0]}", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render(resstate[1].split("\n")[-2].upper(), True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render("If this is your first time seeing this stop error screen,", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("restart this application. If this screen appears again, follow these steps:", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render("Check to make sure you have the most recent version of Academia.", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("Go to https://github.com/jbrightuniverse/AcademiaAnxieta", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("and pull the latest version.", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render("If problems continue, contact the developers via either Discord or a GitHub issue request.", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("Do not continue using the application.", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("Provide the error name and line number in your report.", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render("Technical Information:", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  size = len(resstate[1].split("\n"))*buf
+  sz = 25
+  obuf = buf
+  while i + size > actualheight - (obuf * 2):
+    buf -= 1
+    sz -= 1
+    size = len(resstate[1].split("\n"))*buf
+  for line in resstate[1].split("\n"):
+    screen.blit(fnt(sz).render("*** " + line, True, (255, 255, 255)), (2, i))
+    i += buf
+  i += obuf
+  screen.blit(fnt(25).render("PRESS ANY KEY TO RESTART THE APPLICATION", True, (255, 255, 255)), (2, i))
+  pg.display.flip()
+  delay(2)
+  while True:
+    for event in pg.event.get():
+      if event.type == QUIT: 
+        sys.exit()
+    
+    keys = pg.key.get_pressed()
+    if any(keys):
+      break
+
+  delay(0.5)
+  screen.fill((0,0,0))
+  pg.display.flip()
+  delay(2)

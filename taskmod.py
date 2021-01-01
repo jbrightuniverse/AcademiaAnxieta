@@ -25,9 +25,19 @@ prep[200] = "prep_line"
 functions[200] = "display_line"
 inputs[200] = "wait_line"
 
+prep[200] = "prep_ticket"
+functions[200] = "display_ticket"
+inputs[200] = "pay_ticket"
+
+prep[200] = "prep_timer"
+functions[200] = "display_timer"
+inputs[200] = "ticker_timer"
+
 taskdesc = [""]*256
 taskdesc[128] = "Koerner: Return library books"
 taskdesc[200] = "Sauder: Wait in line for food"
+taskdesc[200] = "West Parkade: Renew parking ticket"
+taskdesc[200] = "Scarfe: Ticker timer lab"
 
 bookbase = pg.image.load("sprites/book.png").convert_alpha()
 
@@ -138,25 +148,51 @@ PARKING TICKET
 """
 
 async def prep_ticket(screen, actualwidth, actualheight, player):
-  books = []
-  rbooks = []
-  bookoffsets = []
-  
-  
-  return books, rbooks, bookoffsets, land_collider
+  number = ""
+  expected = str(random.randint(100000, 999999))
+  task = list(set([int(t) for t in player["tasks"].keys()]).intersection(range(200, 201)))[0]
+  locations = {
+    200: "West Parkade"
+  }
+  return [number, expected, locations[task], time.time()]
 
 async def display_ticket(entries, screen, actualwidth, actualheight):
-  screen.blit(pg.transform.scale(pg.image.load("sprites/bookdrop.png").convert_alpha(), (383*2, 383*2)), (actualwidth//4 + 1, actualheight//2 - (actualwidth//4 - 1)))
-  books, rbooks, bookoffsets, _ = entries
-  for i in range(len(books)):
-    screen.blit(rbooks[i], bookoffsets[i])
+  exp = entries
+  number = exp[0]
+  expected = exp[1]
+  box = pg.Rect(actualwidth//2 - 130, actualheight//2 -20, 260, 40)
+  pg.draw.rect(screen, (128, 128, 128), box)
+  pg.draw.rect(screen, (255, 255, 255), box, 2)
+  pg.draw.rect(screen, (255, 255, 255), pg.Rect(actualwidth//4 + 30, actualheight//2 - actualwidth//4 + 30, 200, 200))
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 28).render("Parking Ticket", True, (0,0,0)), (actualwidth//4 + 35, actualheight//2 - actualwidth//4 + 35))
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render(f"ID: {expected}", True, (0,0,0)), (actualwidth//4 + 35, actualheight//2 - actualwidth//4 + 105))
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render(f"Location: {exp[2]}", True, (0,0,0)), (actualwidth//4 + 35, actualheight//2 - actualwidth//4 + 140))
+  if number:
+    screen.blit(pg.font.Font("OpenSansEmoji.ttf", 20).render(number, True, (0,0,255)), (actualwidth//2 - 130 + 3, actualheight//2 - 20 + 3))
+  
+  # draw textbox
 
 async def pay_ticket(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
   finished = False
-  books, rbooks, bookoffsets, land_collider = entries
+  exp = entries
   mpx, mpy = pg.mouse.get_pos()
   update_render = False
+  keys = pg.key.get_pressed()
+  print(keys[K_BACKSPACE])
+  if keys[K_BACKSPACE] and time.time() - entries[3] > 0.1: 
+    entries[3] = time.time()
+    exp[0] = exp[0][:-1]
+  elif any([keys[i] for i in list(range(48, 58)) + [K_BACKSPACE]]) and time.time() - entries[3] > 0.1 and len(exp[0]) < 7:
+    entries[3] = time.time()
+    for i in range(48, 58):
+      if keys[i]:
+        exp[0] += str(i - 48)
+        if exp[0] == exp[1]:
+          finished = True
+        break
 
+
+  """
   if is_hover != -1 and any(pg.mouse.get_pressed()):
     clicked = True
     if dmx != mpx or dmy != mpy:
@@ -194,7 +230,7 @@ async def pay_ticket(entries, screen, actualwidth, actualheight, dmx, dmy, is_ho
     if is_hover != -1:
       is_hover = -1
       pg.mouse.set_cursor(*pg.cursors.arrow)
-
+  """
   return is_hover, clicked, mpx, mpy, update_render, finished
 
 """
@@ -260,5 +296,89 @@ async def wait_line(entries, screen, actualwidth, actualheight, dmx, dmy, is_hov
     renderstate[2] -= 1
     if not any(personqueue[9:]):
       finished = True
+
+  return is_hover, clicked, mpx, mpy, update_render, finished
+
+"""
+
+TICKER TIMER
+
+"""
+
+async def prep_timer(screen, actualwidth, actualheight, player):
+  dots = []
+  return dots, [actualwidth//4 + 128, False, ""], []
+
+async def display_timer(entries, screen, actualwidth, actualheight):
+  dots, exp, _ = entries
+  screen.blit(pg.image.load("sprites/timer.png").convert_alpha(), (actualwidth//4 + 1, actualheight//2 - (actualwidth//4 - 1)))
+  pg.draw.rect(screen, (255, 255, 255), pg.Rect(actualwidth//4 + 1, actualheight//2 + 35, exp[0]-(actualwidth//4 + 1), 20))
+  pg.draw.rect(screen, (129, 129, 129), pg.Rect(actualwidth//4 + 81, actualheight//2 + 33, 27, 24))
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 40).render("Drag the tape to reach constant velocity", True, (255,255,255)), (actualwidth//4 + 5, 3*actualheight//4))
+  if exp[2]:
+    screen.blit(pg.font.Font("OpenSansEmoji.ttf", 40).render(exp[2], True, (255,0,0)), (actualwidth//4 + 25, 3*actualheight//4 + 45))
+  for dotx in dots:
+    dot = dotx[0]
+    x = exp[0] - dot
+    if x > actualwidth//4 + 81 + 27:
+      pg.draw.circle(screen, (35, 95, 169), (x, actualheight//2 + 45 + dotx[1]), 3)
+  
+
+async def ticker_timer(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
+  finished = False
+  dots, exp, seentimes = entries
+  mpx, mpy = pg.mouse.get_pos()
+  update_render = False
+  edge = exp[0]
+
+  if mpx >= edge-20 and mpx <= edge and mpy >= actualheight//2 + 35 and mpy < actualheight//2 + 55:
+    if is_hover == -1:
+      is_hover = 1
+      pg.mouse.set_cursor(*pg.cursors.diamond)
+
+  else:
+    if is_hover == 1 and not any(pg.mouse.get_pressed()):
+      is_hover = -1
+      pg.mouse.set_cursor(*pg.cursors.arrow)
+
+  if any(pg.mouse.get_pressed()) and is_hover == 1 and exp[0] + mpx - dmx <= 3*actualwidth//4:
+    exp[1] = True
+    if mpx > dmx:
+      exp[0] += mpx - dmx
+
+  elif exp[0] == 3*actualwidth//4:
+    pg.mouse.set_cursor(*pg.cursors.arrow)
+    positions = []
+    if len(dots) < 2:
+      variance = 0
+    else:
+      for i in range(len(dots) - 1):
+        pos = dots[i+1][0] - dots[i][0]
+        positions.append(pos)
+      mean = sum(positions)/len(positions)
+      variance = sum([(a-mean)**2 for a in positions])/len(positions)
+    if variance < 225:
+      if len(dots) < 5:
+        exp[2] = "Minimum 5 dots. Try again."
+        dots[:] = []
+        exp[0] = actualwidth//4 + 128
+        exp[1] = False
+        seentimes[:] = []
+        is_hover = -1
+      else:
+        finished = True
+    else:
+      exp[2] = "Not constant enough. Try again."
+      dots[:] = []
+      exp[0] = actualwidth//4 + 128
+      exp[1] = False
+      seentimes[:] = []
+      is_hover = -1
+
+
+  if exp[1] and exp[0] != 3*actualwidth//4:
+    if int(round(time.time())) not in seentimes:
+      seentimes.append(int(round(time.time())))
+      dots.append([exp[0] - (actualwidth//4 + 94), random.randrange(-5, 6)])
 
   return is_hover, clicked, mpx, mpy, update_render, finished

@@ -307,7 +307,7 @@ TICKER TIMER
 
 async def prep_timer(screen, actualwidth, actualheight, player):
   dots = []
-  return dots, [actualwidth//4 + 128, False, ""], []
+  return dots, [actualwidth//4 + 128, False, "", False], []
 
 async def display_timer(entries, screen, actualwidth, actualheight):
   dots, exp, _ = entries
@@ -323,7 +323,6 @@ async def display_timer(entries, screen, actualwidth, actualheight):
     if x > actualwidth//4 + 81 + 27:
       pg.draw.circle(screen, (35, 95, 169), (x, actualheight//2 + 45 + dotx[1]), 3)
   
-
 async def ticker_timer(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
   finished = False
   dots, exp, seentimes = entries
@@ -363,6 +362,7 @@ async def ticker_timer(entries, screen, actualwidth, actualheight, dmx, dmy, is_
         dots[:] = []
         exp[0] = actualwidth//4 + 128
         exp[1] = False
+        exp[3] = False
         seentimes[:] = []
         is_hover = -1
       else:
@@ -372,6 +372,7 @@ async def ticker_timer(entries, screen, actualwidth, actualheight, dmx, dmy, is_
       dots[:] = []
       exp[0] = actualwidth//4 + 128
       exp[1] = False
+      exp[3] = False
       seentimes[:] = []
       is_hover = -1
 
@@ -379,6 +380,15 @@ async def ticker_timer(entries, screen, actualwidth, actualheight, dmx, dmy, is_
   if exp[1] and exp[0] != 3*actualwidth//4:
     if int(round(time.time())) not in seentimes:
       seentimes.append(int(round(time.time())))
-      dots.append([exp[0] - (actualwidth//4 + 94), random.randrange(-5, 6)])
+      if exp[3] == False: exp[3] = True
+      else:
+        dots.append([exp[0] - (actualwidth//4 + 94), random.randrange(-5, 6)])
 
   return is_hover, clicked, mpx, mpy, update_render, finished
+
+"""
+
+???
+
+"""
+

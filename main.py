@@ -524,7 +524,7 @@ async def play(websocket, pdict, is_owner):
       pg.display.flip()
       flg = False
       
-    if spacestate and task not in completed and task in pdict[myusername]["tasks"] and not doing_task and task != 1 and not pdict[myusername]["impostor"]:
+    if spacestate and task not in completed and str(task) in pdict[myusername]["tasks"] and not doing_task and task != 1 and not pdict[myusername]["impostor"]:
       doing_task = True
       relevant_entries = await globals()[prep[task]](screen, actualwidth, actualheight, pdict[myusername])
       flag = True
@@ -685,7 +685,7 @@ async def play(websocket, pdict, is_owner):
             if task == 1 and not pdict[myusername]["ghost"] and not has:
               rtext(fnt(30), "Press SPACE to call meeting", actualheight - 98)
               has = True
-            elif task not in [0, 1, 255] and not pdict[myusername]["impostor"] and not has:
+            elif str(task) in pdict[myusername]["tasks"] and task not in completed and not pdict[myusername]["impostor"] and not has:
               rtext(fnt(30), "Press SPACE to do task", actualheight - 98)
             if pdict[myusername]["impostor"] and globalminname and not pdict[myusername]["ghost"]:
               rtext(fnt(30), f"Press Q to beam {globalminname['nickname']}", [actualheight - 104, actualheight - 64][has])
@@ -931,7 +931,7 @@ async def play(websocket, pdict, is_owner):
         if task == 1 and not pdict[myusername]["ghost"] and not has:
           rtext(fnt(30), "Press SPACE to call meeting", actualheight - 98)
           has = True
-        elif task not in [0, 1, 255] and not pdict[myusername]["impostor"] and not has:
+        elif str(task) in pdict[myusername]["tasks"] and task not in completed and not pdict[myusername]["impostor"] and not has:
           rtext(fnt(30), "Press SPACE to do task", actualheight - 98)
         if pdict[myusername]["impostor"] and globalminname and not pdict[myusername]["ghost"]:
           rtext(fnt(30), f"Press Q to beam {minname['nickname']}", [actualheight - 104, actualheight - 64][has])

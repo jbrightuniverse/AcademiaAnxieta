@@ -69,7 +69,7 @@ for i in range(61, 66):
 taskdesc = [""]*256
 taskdesc[50] = "Scarfe: Ticker timer lab"
 taskdesc[51] = "UTP: Ticker timer lab"
-taskdesc[52] = "Buchanan A: ECON 101"
+taskdesc[52] = "Chemistry B: ECON 101"
 taskdesc[53] = "Geography: ECON 101"
 taskdesc[54] = "Math: MATH 100"
 taskdesc[55] = "LSK: MATH 100"

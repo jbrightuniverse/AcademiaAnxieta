@@ -189,8 +189,12 @@ myusername = None
 from taskmod import *
 
 tasks = []
+tasklistx = [int(x[:-4]) for x in os.listdir("maps/tasks")]
 for i in range(256):
-  if i in [1, 128, 200]:
+  for event in pg.event.get():
+    if event.type == QUIT: 
+      sys.exit()
+  if i in tasklistx:
     tasks.append(load(f"maps/tasks/{i}.png", bound = True))
   else: tasks.append(None)
 
@@ -520,7 +524,7 @@ async def play(websocket, pdict, is_owner):
       pg.display.flip()
       flg = False
       
-    if spacestate and task not in completed and not doing_task and task != 1 and not pdict[myusername]["impostor"]:
+    if spacestate and task not in completed and task in pdict[myusername]["tasks"] and not doing_task and task != 1 and not pdict[myusername]["impostor"]:
       doing_task = True
       relevant_entries = await globals()[prep[task]](screen, actualwidth, actualheight, pdict[myusername])
       flag = True
@@ -571,7 +575,7 @@ async def play(websocket, pdict, is_owner):
             temp = pg.transform.scale(temp, (width*MS, height*MS))
             screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
-            if task not in completed and (not pdict[myusername]["ghost"] or task != 1) and (not pdict[myusername]["impostor"] or task == 1):
+            if task not in completed and str(task) in pdict[myusername]["tasks"]  and (not pdict[myusername]["ghost"] or task != 1) and (not pdict[myusername]["impostor"] or task == 1):
                 overmap = tasks[task]
                 temp = pg.Surface((width, height), pg.SRCALPHA)
                 temp.blit(overmap, (0,0), pg.Rect(ox, oy, width, height))
@@ -827,7 +831,7 @@ async def play(websocket, pdict, is_owner):
         temp = pg.transform.scale(temp, (width*MS, height*MS))
         screen.blit(temp, (0,0), pg.Rect(width, height, width, height))
 
-        if task not in completed and (not pdict[myusername]["ghost"] or task != 1) and (not pdict[myusername]["impostor"] or task == 1):
+        if task not in completed and str(task) in pdict[myusername]["tasks"] and (not pdict[myusername]["ghost"] or task != 1) and (not pdict[myusername]["impostor"] or task == 1):
           overmap = tasks[task]
           temp = pg.Surface((width, height), pg.SRCALPHA)
           temp.blit(overmap, (0,0), pg.Rect(ox, oy, width, height))

@@ -17,57 +17,87 @@ functions = [None]*256
 prep = [None]*256
 inputs = [None]*256
 
-prep[128] = "prep_books"
-functions[128] = "display_books"
-inputs[128] = "return_books"
+for i in range(128, 133):
+  prep[i] = "prep_books"
+  functions[i] = "display_books"
+  inputs[i] = "return_books"
 
-prep[200] = "prep_line"
-functions[200] = "display_line"
-inputs[200] = "wait_line"
+for i in range(200, 205):
+  prep[i] = "prep_line"
+  functions[i] = "display_line"
+  inputs[i] = "wait_line"
 
-prep[200] = "prep_ticket"
-functions[200] = "display_ticket"
-inputs[200] = "pay_ticket"
+for i in range(75, 80):
+  prep[i] = "prep_ticket"
+  functions[i] = "display_ticket"
+  inputs[i] = "pay_ticket"
 
-prep[200] = "prep_timer"
-functions[200] = "display_timer"
-inputs[200] = "ticker_timer"
+for i in [50, 51]:
+  prep[i] = "prep_timer"
+  functions[i] = "display_timer"
+  inputs[i] = "ticker_timer"
 
-prep[200] = "prep_sd"
-functions[200] = "display_sd"
-inputs[200] = "eq_sd"
+for i in [52, 53]:
+  prep[i] = "prep_sd"
+  functions[i] = "display_sd"
+  inputs[i] = "eq_sd"
 
-prep[200] = "prep_math"
-functions[200] = "display_math"
-inputs[200] = "do_math"
+for i in [54, 55]:
+  prep[i] = "prep_math"
+  functions[i] = "display_math"
+  inputs[i] = "do_math"
 
-prep[200] = "prep_math2"
-functions[200] = "display_math2"
-inputs[200] = "do_math2"
+for i in [56, 57]:
+  prep[i] = "prep_math2"
+  functions[i] = "display_math2"
+  inputs[i] = "do_math2"
 
-prep[200] = "prep_list"
-functions[200] = "display_list"
-inputs[200] = "do_list"
+for i in [58, 59]:
+  prep[i] = "prep_list"
+  functions[i] = "display_list"
+  inputs[i] = "do_list"
 
-prep[200] = "prep_e"
-functions[200] = "display_e"
-inputs[200] = "paint_e"
+prep[60] = "prep_e"
+functions[60] = "display_e"
+inputs[60] = "paint_e"
 
-prep[200] = "prep_birb"
-functions[200] = "display_birb"
-inputs[200] = "feed_birb"
+for i in range(61, 66):
+  prep[i] = "prep_birb"
+  functions[i] = "display_birb"
+  inputs[i] = "feed_birb"
 
 taskdesc = [""]*256
+taskdesc[50] = "Scarfe: Ticker timer lab"
+taskdesc[51] = "UTP: Ticker timer lab"
+taskdesc[52] = "Buchanan A: ECON 101"
+taskdesc[53] = "Geography: ECON 101"
+taskdesc[54] = "Math: MATH 100"
+taskdesc[55] = "LSK: MATH 100"
+taskdesc[56] = "Math: MATH 101"
+taskdesc[57] = "LSK: MATH 101"
+taskdesc[58] = "Dempster: CPSC 221"
+taskdesc[59] = "MacMillan: CPSC 221"
+taskdesc[60] = "Main Mall: Paint E"
+taskdesc[61] = "Fountain: Feed birb"
+taskdesc[62] = "UTP: Feed birb"
+taskdesc[63] = "UBC Exchange: Feed birb"
+taskdesc[64] = "Nest: Feed birb"
+taskdesc[65] = "Rose Garden: Feed birb"
+taskdesc[75] = "West Parkade: Renew parking ticket"
+taskdesc[76] = "North Parkade: Renew parking ticket"
+taskdesc[77] = "Fraser Parkade: Renew parking ticket"
+taskdesc[78] = "Health Parkade: Renew parking ticket"
+taskdesc[79] = "MacInnes Parkade: Renew parking ticket"
 taskdesc[128] = "Koerner: Return library books"
+taskdesc[129] = "IKB: Return library books"
+taskdesc[130] = "Scarfe: Return library books"
+taskdesc[131] = "Woodward: Return library books"
+taskdesc[132] = "Xwi7xwa: Return library books"
 taskdesc[200] = "Sauder: Wait in line for food"
-taskdesc[200] = "West Parkade: Renew parking ticket"
-taskdesc[200] = "Scarfe: Ticker timer lab"
-taskdesc[200] = "Buchanan A: ECON 101"
-taskdesc[200] = "Math: MATH 100"
-taskdesc[200] = "Math: MATH 101"
-taskdesc[200] = "ICICS: CPSC 221"
-taskdesc[200] = "Main Mall: Paint E"
-taskdesc[200] = "Fountain: Feed birb"
+taskdesc[201] = "Nest: Wait in line for food"
+taskdesc[202] = "Life: Wait in line for food"
+taskdesc[203] = "Central: Wait in line for food"
+taskdesc[204] = "Strangway: Wait in line for food"
 
 bookbase = pg.image.load("sprites/book.png").convert_alpha()
 
@@ -730,7 +760,7 @@ async def feed_birb(entries, screen, actualwidth, actualheight, dmx, dmy, is_hov
       entries[:] = [0, 0, actualwidth//4+30, actualheight//2+actualwidth//4-95, time.time(), -1, -1, False, 0]
     
     update_render = True
-    
+
   if (x - 1053)**2 + (y-678)**2 <= 1000:
     finished = True
     pg.mouse.set_cursor(*pg.cursors.arrow)

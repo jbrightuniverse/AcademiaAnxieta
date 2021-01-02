@@ -190,12 +190,17 @@ from taskmod import *
 
 tasks = []
 tasklistx = [int(x[:-4]) for x in os.listdir("maps/tasks")]
+tasklistx.sort()
 for i in range(256):
   for event in pg.event.get():
     if event.type == QUIT: 
       sys.exit()
   if i in tasklistx:
     tasks.append(load(f"maps/tasks/{i}.png", bound = True))
+    screen.fill((0,0,0))
+    rtext(font, "Loading...", height//2 - 35)
+    rtext(font, f"{tasklistx.index(i)} of {len(tasklistx)} complete", height//2 + 35)
+    pg.display.flip()
   else: tasks.append(None)
 
 mainmap = load("maps/ubc.png", bound = True)

@@ -211,7 +211,11 @@ async def prep_ticket(screen, actualwidth, actualheight, player):
   expected = str(random.randint(100000, 999999))
   task = list(set([int(t) for t in player["tasks"].keys()]).intersection(range(200, 205)))[0]
   locations = {
-    200: "West Parkade"
+    200: "West Parkade",
+    201: "North Parkade",
+    202: "Fraser Parkade",
+    203: "Health Parkade",
+    204: "MacInnes Parkade"
   }
   return [number, expected, locations[task], time.time()]
 

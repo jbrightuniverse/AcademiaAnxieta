@@ -209,7 +209,7 @@ PARKING TICKET
 async def prep_ticket(screen, actualwidth, actualheight, player):
   number = ""
   expected = str(random.randint(100000, 999999))
-  task = list(set([int(t) for t in player["tasks"].keys()]).intersection(range(75, 79)))[0]
+  task = list(set([int(t) for t in player["tasks"].keys()]).intersection(range(75, 80)))[0]
   locations = {
     75: "West Parkade",
     76: "North Parkade",

@@ -95,6 +95,64 @@ def display_menu():
   rtext(font, "Academia", 20, 5)
   rtext(font2, "It's got an even better name now. ©2020-2021 Bright Universe", height-40)
 
+
+def display_error(resstate):
+  global screen
+  screen.fill((0, 0, 128))
+  i = 2
+  buf = 27
+  screen.blit(fnt(25).render("A problem has been detected and Academia has been shut down to prevent damage to your computer.", True, (255,255,255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render(f"The problem seems to be caused by the following file: {resstate[0]}", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render(resstate[1].split("\n")[-2].upper(), True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render("If this is your first time seeing this stop error screen,", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("restart this application. If this screen appears again, follow these steps:", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render("Check to make sure you have the most recent version of Academia.", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("Go to https://github.com/jbrightuniverse/AcademiaAnxieta", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("and pull the latest version.", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render("If problems continue, contact the developers via either Discord or a GitHub issue request.", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("Do not continue using the application.", True, (255, 255, 255)), (2, i))
+  i += buf
+  screen.blit(fnt(25).render("Provide the error name and line number in your report.", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  screen.blit(fnt(25).render("Technical Information:", True, (255, 255, 255)), (2, i))
+  i += buf*2
+  size = len(resstate[1].split("\n"))*buf
+  sz = 25
+  obuf = buf
+  while i + size > actualheight - (obuf * 2):
+    buf -= 1
+    sz -= 1
+    size = len(resstate[1].split("\n"))*buf
+  for line in resstate[1].split("\n"):
+    screen.blit(fnt(sz).render("*** " + line, True, (255, 255, 255)), (2, i))
+    i += buf
+  i += obuf
+  screen.blit(fnt(25).render("PRESS ANY KEY TO RESTART THE APPLICATION", True, (255, 255, 255)), (2, i))
+  pg.display.flip()
+  delay(2)
+  while True:
+    for event in pg.event.get():
+      if event.type == QUIT: 
+        sys.exit()
+    
+    keys = pg.key.get_pressed()
+    if any(keys):
+      break
+
+  delay(0.5)
+  screen.fill((0,0,0))
+  pg.display.flip()
+  delay(2)
+
 def nmap(val, omin, omax, rmin, rmax):
   return (float(val) - float(omin)) * (float(rmax) - float(rmin)) / (float(omax) - float(omin)) + float(rmin)
 
@@ -346,10 +404,16 @@ async def play(websocket, pdict, is_owner):
       meeting_called = 0.5
 
     if keys[K_TAB]:
-      importlib.reload(sys.modules["taskmod"])
-      kys = " ".join(sys.modules["taskmod"].__dict__.keys()).split("fill ")[-1].split(" ")
-      for key in kys:
-        globals()[key] = getattr(sys.modules["taskmod"], key)
+      try:
+        importlib.reload(sys.modules["taskmod"])
+        kys = " ".join(sys.modules["taskmod"].__dict__.keys()).split("fill ")[-1].split(" ")
+        for key in kys:
+          globals()[key] = getattr(sys.modules["taskmod"], key)
+      except Exception as error:
+        if "code = 1000 (OK), no reason" not in str(error) and "code = 1006" not in str(error) and "code = 1011" not in str(error):
+          tb = "".join(traceback.format_exception(type(error), error, error.__traceback__, 999))
+          display_error((tb.split("File ")[-1].split(" ")[0].split("\\")[-1].split("\"")[0], tb))
+        else: display_error(("main.py", "ServerError: internal server error"))
 
     if doing_task:
       mpx, mpy = pg.mouse.get_pos()
@@ -1988,57 +2052,4 @@ async def program():
 
 while True:
   resstate = asyncio.get_event_loop().run_until_complete(program())
-  screen.fill((0, 0, 128))
-  i = 2
-  buf = 27
-  screen.blit(fnt(25).render("A problem has been detected and Academia has been shut down to prevent damage to your computer.", True, (255,255,255)), (2, i))
-  i += buf*2
-  screen.blit(fnt(25).render(f"The problem seems to be caused by the following file: {resstate[0]}", True, (255, 255, 255)), (2, i))
-  i += buf*2
-  screen.blit(fnt(25).render(resstate[1].split("\n")[-2].upper(), True, (255, 255, 255)), (2, i))
-  i += buf*2
-  screen.blit(fnt(25).render("If this is your first time seeing this stop error screen,", True, (255, 255, 255)), (2, i))
-  i += buf
-  screen.blit(fnt(25).render("restart this application. If this screen appears again, follow these steps:", True, (255, 255, 255)), (2, i))
-  i += buf*2
-  screen.blit(fnt(25).render("Check to make sure you have the most recent version of Academia.", True, (255, 255, 255)), (2, i))
-  i += buf
-  screen.blit(fnt(25).render("Go to https://github.com/jbrightuniverse/AcademiaAnxieta", True, (255, 255, 255)), (2, i))
-  i += buf
-  screen.blit(fnt(25).render("and pull the latest version.", True, (255, 255, 255)), (2, i))
-  i += buf*2
-  screen.blit(fnt(25).render("If problems continue, contact the developers via either Discord or a GitHub issue request.", True, (255, 255, 255)), (2, i))
-  i += buf
-  screen.blit(fnt(25).render("Do not continue using the application.", True, (255, 255, 255)), (2, i))
-  i += buf
-  screen.blit(fnt(25).render("Provide the error name and line number in your report.", True, (255, 255, 255)), (2, i))
-  i += buf*2
-  screen.blit(fnt(25).render("Technical Information:", True, (255, 255, 255)), (2, i))
-  i += buf*2
-  size = len(resstate[1].split("\n"))*buf
-  sz = 25
-  obuf = buf
-  while i + size > actualheight - (obuf * 2):
-    buf -= 1
-    sz -= 1
-    size = len(resstate[1].split("\n"))*buf
-  for line in resstate[1].split("\n"):
-    screen.blit(fnt(sz).render("*** " + line, True, (255, 255, 255)), (2, i))
-    i += buf
-  i += obuf
-  screen.blit(fnt(25).render("PRESS ANY KEY TO RESTART THE APPLICATION", True, (255, 255, 255)), (2, i))
-  pg.display.flip()
-  delay(2)
-  while True:
-    for event in pg.event.get():
-      if event.type == QUIT: 
-        sys.exit()
-    
-    keys = pg.key.get_pressed()
-    if any(keys):
-      break
-
-  delay(0.5)
-  screen.fill((0,0,0))
-  pg.display.flip()
-  delay(2)
+  display_error(resstate)

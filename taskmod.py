@@ -33,11 +33,41 @@ prep[200] = "prep_timer"
 functions[200] = "display_timer"
 inputs[200] = "ticker_timer"
 
+prep[200] = "prep_sd"
+functions[200] = "display_sd"
+inputs[200] = "eq_sd"
+
+prep[200] = "prep_math"
+functions[200] = "display_math"
+inputs[200] = "do_math"
+
+prep[200] = "prep_math2"
+functions[200] = "display_math2"
+inputs[200] = "do_math2"
+
+prep[200] = "prep_list"
+functions[200] = "display_list"
+inputs[200] = "do_list"
+
+prep[200] = "prep_e"
+functions[200] = "display_e"
+inputs[200] = "paint_e"
+
+prep[200] = "prep_birb"
+functions[200] = "display_birb"
+inputs[200] = "feed_birb"
+
 taskdesc = [""]*256
 taskdesc[128] = "Koerner: Return library books"
 taskdesc[200] = "Sauder: Wait in line for food"
 taskdesc[200] = "West Parkade: Renew parking ticket"
 taskdesc[200] = "Scarfe: Ticker timer lab"
+taskdesc[200] = "Buchanan A: ECON 101"
+taskdesc[200] = "Math: MATH 100"
+taskdesc[200] = "Math: MATH 101"
+taskdesc[200] = "ICICS: CPSC 221"
+taskdesc[200] = "Main Mall: Paint E"
+taskdesc[200] = "Fountain: Feed birb"
 
 bookbase = pg.image.load("sprites/book.png").convert_alpha()
 
@@ -59,7 +89,6 @@ def fill(surface, color):
       if col[2] == 61:
         surface.set_at((x, y), pg.Color(r, g, b, 255))
   return surface
-
 
 """
 
@@ -178,7 +207,6 @@ async def pay_ticket(entries, screen, actualwidth, actualheight, dmx, dmy, is_ho
   mpx, mpy = pg.mouse.get_pos()
   update_render = False
   keys = pg.key.get_pressed()
-  print(keys[K_BACKSPACE])
   if keys[K_BACKSPACE] and time.time() - entries[3] > 0.1: 
     entries[3] = time.time()
     exp[0] = exp[0][:-1]
@@ -190,47 +218,6 @@ async def pay_ticket(entries, screen, actualwidth, actualheight, dmx, dmy, is_ho
         if exp[0] == exp[1]:
           finished = True
         break
-
-
-  """
-  if is_hover != -1 and any(pg.mouse.get_pressed()):
-    clicked = True
-    if dmx != mpx or dmy != mpy:
-      bookoffsets[is_hover][0] -= dmx-mpx
-      bookoffsets[is_hover][1] -= dmy-mpy
-      bruh = rbooks[is_hover].copy()
-      bruh.fill((0,0,0), special_flags=pg.BLEND_RGB_MULT)
-      surf = pg.Surface((actualwidth, actualheight))
-      surf.fill((255, 255, 255))
-      surf.blit(bruh, bookoffsets[is_hover])
-      books[is_hover] = surf
-      update_render = True
-
-  elif not any(pg.mouse.get_pressed()):
-    clicked = False
-    if is_hover != -1 and land_collider.get_at((mpx, mpy))[0] != 255:
-      del books[is_hover]
-      del rbooks[is_hover]
-      del bookoffsets[is_hover]
-      is_hover = -1
-      pg.mouse.set_cursor(*pg.cursors.arrow)
-      update_render = True
-      if len(books) == 0: finished = True
-
-  intersecting = False
-  for b in range(len(books)-1, -1, -1):
-    if books[b].get_at((mpx, mpy))[0] == 0:
-      intersecting = True
-      if not clicked:
-        is_hover = b
-        pg.mouse.set_cursor(*pg.cursors.diamond)
-      break
-
-  if not intersecting:
-    if is_hover != -1:
-      is_hover = -1
-      pg.mouse.set_cursor(*pg.cursors.arrow)
-  """
   return is_hover, clicked, mpx, mpy, update_render, finished
 
 """
@@ -344,6 +331,7 @@ async def ticker_timer(entries, screen, actualwidth, actualheight, dmx, dmy, is_
     exp[1] = True
     if mpx > dmx:
       exp[0] += mpx - dmx
+      update_render = True
 
   elif exp[0] == 3*actualwidth//4:
     pg.mouse.set_cursor(*pg.cursors.arrow)
@@ -388,7 +376,378 @@ async def ticker_timer(entries, screen, actualwidth, actualheight, dmx, dmy, is_
 
 """
 
-???
+SUPPLY DEMAND GRAPH
 
 """
 
+async def prep_sd(screen, actualwidth, actualheight, player):
+  top = actualwidth//3 + random.randrange(actualheight//4), actualheight//2 - actualwidth//6 + random.randrange(actualheight//4)
+  bottom = 2*actualwidth//3 - random.randrange(actualheight//4), actualheight//2 + actualwidth//6 - random.randrange(actualheight//4)
+  top2 = 2*actualwidth//3 - random.randrange(actualheight//4), actualheight//2 - actualwidth//6 + random.randrange(actualheight//4)
+  bottom2 = actualwidth//3 + random.randrange(actualheight//4), actualheight//2 + actualwidth//6 - random.randrange(actualheight//4)
+  return [top, bottom, top2, bottom2, (actualwidth//4 + 25 + 7, actualheight//2 + actualwidth//4 - 95 - 7)]
+
+async def display_sd(entries, screen, actualwidth, actualheight):
+  exp = entries
+  pg.draw.line(screen, (0, 255, 0), exp[0], exp[1], 4)
+  pg.draw.line(screen, (255, 0, 0), exp[2], exp[3], 4)
+  pg.draw.line(screen, (0,0,0), (actualwidth//4 + 25, actualheight//2 - actualwidth//4 + 55), (actualwidth//4 + 25, actualheight//2 + actualwidth//4 - 95), 4)
+  pg.draw.line(screen, (0,0,0), (actualwidth//4 + 25, actualheight//2 + actualwidth//4 - 95), (3*actualwidth//4 - 25, actualheight//2 + actualwidth//4 - 95), 4)
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 50).render("Find the Equilibrium", True, (255, 255, 255)), (385, actualheight//2 - actualwidth//4 + 2))
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 15).render("Equilibrium (move me)", True, (255, 255, 255)), (exp[4][0]+ 4, exp[4][1] - 11))
+  pg.draw.circle(screen, (255, 255, 255), exp[4], 3)
+
+async def eq_sd(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
+  finished = False
+  exp = entries
+  mpx, mpy = pg.mouse.get_pos()
+  update_render = False
+
+  if (mpx - exp[4][0])**2 + (mpy - exp[4][1])**2 <= 9:
+    if is_hover == -1:
+      pg.mouse.set_cursor(*pg.cursors.diamond)
+      is_hover = 1
+
+  elif is_hover == 1:
+    is_hover = -1
+    pg.mouse.set_cursor(*pg.cursors.arrow)
+
+  if any(pg.mouse.get_pressed()):
+    exp[4] = [mpx, mpy]
+
+  dx = exp[0][0] - exp[1][0]
+  dy = exp[0][1] - exp[1][1]
+  slope = dy/dx
+
+  dx2 = exp[2][0] - exp[3][0]
+  dy2 = exp[2][1] - exp[3][1]
+  slope2 = dy2/dx2
+
+
+  x = (exp[2][1]-exp[0][1] + slope*exp[0][0] - slope2*exp[2][0])/(slope-slope2)
+  y = slope2 * (x - exp[2][0]) + exp[2][1]
+
+  if (x - exp[4][0])**2 + (y - exp[4][1])**2 <= 16:
+    pg.mouse.set_cursor(*pg.cursors.arrow)
+    finished = True
+  #else:
+  #  print((x - exp[4][0])**2 + (y - exp[4][1])**2)
+
+  return is_hover, clicked, mpx, mpy, update_render, finished
+
+"""
+
+POWER RULE
+
+"""
+
+async def prep_math(screen, actualwidth, actualheight, player):
+  number = ""
+  base = 10
+  exp = 10
+  while base*exp >= 100:
+    base = random.randint(1, 10)
+    exp = random.randint(3, 10)
+  return [base, exp, "", time.time()]
+
+async def display_math(entries, screen, actualwidth, actualheight):
+  exp = entries
+  base = exp[0]
+  expo = exp[1]
+  number = exp[2]
+  box = pg.Rect(actualwidth//2 - 130, actualheight//2 -20, 260, 40)
+  pg.draw.rect(screen, (128, 128, 128), box)
+  pg.draw.rect(screen, (255, 255, 255), box, 2)
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 28).render(f"Find d/dx {base}x^{expo}", True, (0,0,0)), (actualwidth//4 + 35, actualheight//2 - actualwidth//4 + 35))
+  if number:
+    screen.blit(pg.font.Font("OpenSansEmoji.ttf", 20).render(number, True, (0,0,255)), (actualwidth//2 - 130 + 3, actualheight//2 - 20 + 3))
+  
+async def do_math(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
+  finished = False
+  exp = entries
+  mpx, mpy = pg.mouse.get_pos()
+  update_render = False
+  keys = pg.key.get_pressed()
+  if time.time() - entries[3] > 0.1:
+    if keys[K_x] and len(exp[2]) < 7:
+      entries[3] = time.time()
+      exp[2] += "x"
+    elif (keys[K_LSHIFT] or keys[K_RSHIFT]) and keys[K_6] and len(exp[2]) < 7:
+      entries[3] = time.time()
+      exp[2] += "^"
+    elif keys[K_BACKSPACE]: 
+      entries[3] = time.time()
+      exp[2] = exp[2][:-1]
+    elif any([keys[i] for i in list(range(48, 58)) + [K_BACKSPACE]]) and len(exp[2]) < 7:
+      entries[3] = time.time()
+      for i in range(48, 58):
+        if keys[i]:
+          exp[2] += str(i - 48)
+          break
+    shouldsee = f"{exp[0]*exp[1]}x^{exp[1]-1}"
+    if exp[2].lower() == shouldsee:
+      finished = True
+
+  return is_hover, clicked, mpx, mpy, update_render, finished
+
+"""
+
+INVERSE POWER RULE
+
+"""
+
+async def prep_math2(screen, actualwidth, actualheight, player):
+  number = ""
+  base = 10
+  exp = 3
+  while not (base/(exp+1)).is_integer() or int(round(base/(exp+1))) == 1:
+    base = random.randint(1, 10)
+    exp = random.randint(2, 9)
+  return [base, exp, "", time.time()]
+
+async def display_math2(entries, screen, actualwidth, actualheight):
+  exp = entries
+  base = exp[0]
+  expo = exp[1]
+  number = exp[2]
+  box = pg.Rect(actualwidth//2 - 130, actualheight//2 -20, 260, 40)
+  pg.draw.rect(screen, (128, 128, 128), box)
+  pg.draw.rect(screen, (255, 255, 255), box, 2)
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 28).render(f"Find ∫{base}x^{expo} dx", True, (0,0,0)), (actualwidth//4 + 35, actualheight//2 - actualwidth//4 + 35))
+  if number:
+    screen.blit(pg.font.Font("OpenSansEmoji.ttf", 20).render(number, True, (0,0,255)), (actualwidth//2 - 130 + 3, actualheight//2 - 20 + 3))
+  
+async def do_math2(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
+  finished = False
+  exp = entries
+  mpx, mpy = pg.mouse.get_pos()
+  update_render = False
+  keys = pg.key.get_pressed()
+  if time.time() - entries[3] > 0.1:
+    if keys[K_x] and len(exp[2]) < 9:
+      entries[3] = time.time()
+      exp[2] += "x"
+    elif keys[K_EQUALS] and len(exp[2]) < 9:
+      entries[3] = time.time()
+      exp[2] += "+"
+    elif keys[K_c] and len(exp[2]) < 9:
+      entries[3] = time.time()
+      exp[2] += "c"
+    elif (keys[K_LSHIFT] or keys[K_RSHIFT]) and keys[K_6] and len(exp[2]) < 9:
+      entries[3] = time.time()
+      exp[2] += "^"
+    elif keys[K_BACKSPACE]: 
+      entries[3] = time.time()
+      exp[2] = exp[2][:-1]
+    elif any([keys[i] for i in list(range(48, 58)) + [K_BACKSPACE]]) and len(exp[2]) < 9:
+      entries[3] = time.time()
+      for i in range(48, 58):
+        if keys[i]:
+          exp[2] += str(i - 48)
+          break
+    shouldsee = f"{exp[0]//(exp[1]+1)}x^{exp[1]+1}+c"
+    if exp[2].lower() == shouldsee:
+      finished = True
+
+  return is_hover, clicked, mpx, mpy, update_render, finished
+
+"""
+
+LIST SORT
+
+"""
+
+async def prep_list(screen, actualwidth, actualheight, player):
+  numbers = random.sample(range(1000), 10)
+  return numbers, [None, time.time()]
+
+async def display_list(entries, screen, actualwidth, actualheight):
+  numbers, clicked = entries
+  x = actualwidth//4 + 10
+  screen.blit(pg.font.Font("OpenSansEmoji.ttf", 28).render(f"Sort list in ascending order", True, (0,0,0)), (actualwidth//4 + 35, actualheight//2 - actualwidth//4 + 35))
+  for number in numbers:
+    if clicked[0] and numbers[clicked[0]] == number: 
+      col = (255, 255, 255)
+    else: col = (128, 128, 128)
+    pg.draw.rect(screen, col, pg.Rect(x, actualheight//2, 65, 65))
+    screen.blit(pg.font.Font("OpenSansEmoji.ttf", 28).render(str(number), True, (0,0,0)), (x + 10, actualheight//2 + 15))
+    x += 75
+  
+async def do_list(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
+  finished = False
+  numbers, click = entries
+  mpx, mpy = pg.mouse.get_pos()
+  update_render = False
+
+  xfloor = (((mpx-(actualwidth//4 + 10))//75) * 75) + actualwidth//4 + 10
+  if mpy >= actualheight//2 and mpy < actualheight//2 + 65 and mpx >= xfloor and mpx < xfloor + 65 and (mpx-(actualwidth//4 + 10))//75 in range(10):
+    if is_hover != (mpx-(actualwidth//4 + 10))//75:
+      is_hover = (mpx-(actualwidth//4 + 10))//75
+      pg.mouse.set_cursor(*pg.cursors.diamond)
+
+  elif is_hover != -1:
+    pg.mouse.set_cursor(*pg.cursors.arrow)
+    is_hover = -1
+
+  if any(pg.mouse.get_pressed()) and is_hover != -1 and time.time() - click[1] > 0.1:
+    if is_hover == click[0]:
+      click[0] = None
+    elif click[0] == None:
+      click[0] = is_hover
+    else:
+      numbers[is_hover], numbers[click[0]] = numbers[click[0]], numbers[is_hover]
+      click[0] = None
+      
+    click[1] = time.time()
+
+  if all([numbers[i] < numbers[i+1] for i in range(len(numbers)-1)]):
+    finished = True
+
+  return is_hover, clicked, mpx, mpy, update_render, finished
+
+"""
+
+PAINT E
+
+"""
+
+async def prep_e(screen, actualwidth, actualheight, player):
+  colors = [[random.randint(0, 255) for i in range(3)] for j in range(8)] + [[255, 255, 255], [255, 0, 0]]
+  random.shuffle(colors)
+  return colors, [random.randint(0, 255) for i in range(3)], [random.randint(0, 255) for i in range(3)], [0, time.time()]
+
+async def display_e(entries, screen, actualwidth, actualheight):
+  colors, base, letter, exp = entries
+  baseimg = pg.image.load("sprites/e_base.png").convert_alpha()
+  baseimg.fill(base, special_flags=pg.BLEND_RGB_MULT)
+  letimg = pg.image.load("sprites/e_letter.png").convert_alpha()
+  letimg.fill(letter, special_flags=pg.BLEND_RGB_MULT)
+  screen.blit(baseimg, (actualwidth//4 + 1, actualheight//2 - (actualwidth//4 - 1)))
+  screen.blit(letimg, (actualwidth//4 + 1, actualheight//2 - (actualwidth//4 - 1)))
+  x = actualwidth//4 + 10
+  for color in colors:
+    if colors[exp[0]] == color: 
+      col = (0, 0, 255)
+    else: col = (0,0,0)
+    pg.draw.rect(screen, col, pg.Rect(x, actualheight//2 - actualwidth//4 + 2, 65, 65))
+    pg.draw.rect(screen, color, pg.Rect(x+3, actualheight//2 - actualwidth//4 + 2+3, 59, 59))
+    x += 75
+
+async def paint_e(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
+  finished = False
+  colors, base, letter, exp = entries
+  mpx, mpy = pg.mouse.get_pos()
+  update_render = False
+  baseimg = pg.Surface((actualwidth, actualheight), pg.SRCALPHA)
+  baseimg.blit(pg.image.load("sprites/e_base.png").convert_alpha(), (actualwidth//4+1, actualheight//2 - actualwidth//4 + 1))
+  letimg = pg.Surface((actualwidth, actualheight), pg.SRCALPHA)
+  letimg.blit(pg.image.load("sprites/e_letter.png").convert_alpha(), (actualwidth//4+1, actualheight//2 - actualwidth//4 + 1))
+  xfloor = (((mpx-(actualwidth//4 + 10))//75) * 75) + actualwidth//4 + 10
+  if mpy >= actualheight//2-actualwidth//4+2 and mpy < actualheight//2-actualwidth//4+2+65 and mpx >= xfloor and mpx < xfloor + 65 and (mpx-(actualwidth//4 + 10))//75 in range(10):
+    if is_hover != (mpx-(actualwidth//4 + 10))//75:
+      is_hover = (mpx-(actualwidth//4 + 10))//75
+      pg.mouse.set_cursor(*pg.cursors.diamond)
+
+  elif letimg.get_at((mpx, mpy))[0] == 255:
+    is_hover = -2
+    pg.mouse.set_cursor(*pg.cursors.diamond)
+
+  elif baseimg.get_at((mpx, mpy))[0] == 255 and letimg.get_at((mpx, mpy)) != (0,0,0,255):
+    is_hover = -3
+    pg.mouse.set_cursor(*pg.cursors.diamond)
+
+  elif is_hover != -1:
+    pg.mouse.set_cursor(*pg.cursors.arrow)
+    is_hover = -1
+
+  if any(pg.mouse.get_pressed()) and time.time() - exp[1] > 0.1:
+    if is_hover not in [-1, -2, -3]:
+      exp[0] = is_hover  
+      exp[1] = time.time()
+    elif is_hover == -2:
+      letter[:] = colors[exp[0]][:]
+      exp[1] = time.time()
+    elif is_hover == -3:
+      base[:] = colors[exp[0]][:]
+      exp[1] = time.time()
+
+    if base == [255, 255, 255] and letter == [255, 0, 0]:
+      finished = True
+      pg.mouse.set_cursor(*pg.cursors.arrow)
+
+  return is_hover, clicked, mpx, mpy, update_render, finished
+
+"""
+
+FEED BIRB
+
+"""
+
+async def prep_birb(screen, actualwidth, actualheight, player):
+  return [0, 0, actualwidth//4+30, actualheight//2+actualwidth//4-95, time.time(), -1, -1, False, 0]
+
+async def display_birb(entries, screen, actualwidth, actualheight):
+  vix, viy, x, y, thetime, mx, my, flying, ydir = entries
+  crow = pg.image.load("sprites/crow.png")
+  crow = pg.transform.flip(crow, True, False)
+  crow = pg.transform.scale(crow, (100, 100))
+  screen.blit(crow, (3*actualwidth//4-100, actualheight//2+actualwidth//4-130))
+  #pg.draw.rect(screen, (0,0,255), pg.Rect(actualwidth//2, actualheight//2, 20, actualwidth//4))
+  pg.draw.rect(screen, (0,0,255), pg.Rect(3*actualwidth//4-63, actualheight//2+actualwidth//4-30, 20, 30))
+  pg.draw.rect(screen, (0,0,255), pg.Rect(actualwidth//4+20, actualheight//2+actualwidth//4-80, 20, 80))
+  if mx != -1:
+    pg.draw.line(screen, (255, 255, 255, 128), (mx, my), (actualwidth//4+30, actualheight//2+actualwidth//4-95), 5)
+  pg.draw.circle(screen, (194, 172, 110), (x, y), 15)
+
+
+async def feed_birb(entries, screen, actualwidth, actualheight, dmx, dmy, is_hover, clicked):
+  vix, viy, x, y, thetime, mx, my, flying, ydir = entries
+  mpx, mpy = pg.mouse.get_pos()
+  update_render = False
+  finished = False
+
+  ctrx = actualwidth//4+30
+  ctry = actualheight//2+actualwidth//4-95
+
+  if (mpx - ctrx)**2 + (mpy - ctry)**2 <= 255:
+    if is_hover == -1:
+      is_hover = 1
+      pg.mouse.set_cursor(*pg.cursors.diamond)
+
+  elif is_hover == 1:
+    is_hover = -1
+    pg.mouse.set_cursor(*pg.cursors.arrow)
+
+  if flying:
+    diff = time.time() - thetime
+    entries[2] = entries[2] + entries[0]
+    entries[3] = ctry + int(round(entries[1]*diff + ydir*-9.81*0.5*diff*diff))
+    if entries[3] == 0: 
+      entries[:] = [0, 0, actualwidth//4+30, actualheight//2+actualwidth//4-95, time.time(), -1, -1, False, 0]
+    elif entries[2] >= 3*actualwidth//4 or entries[2] <= actualwidth//4 or screen.get_at((entries[2], entries[3])) == (0,0,255,255):
+      entries[:] = [0, 0, actualwidth//4+30, actualheight//2+actualwidth//4-95, time.time(), -1, -1, False, 0]
+    elif entries[3] <= actualheight//2 - actualwidth//4 + 1 or entries[3] >= actualheight//2 + actualwidth//4:
+      entries[:] = [0, 0, actualwidth//4+30, actualheight//2+actualwidth//4-95, time.time(), -1, -1, False, 0]
+    
+    update_render = True
+    
+  if (x - 1053)**2 + (y-678)**2 <= 1000:
+    finished = True
+    pg.mouse.set_cursor(*pg.cursors.arrow)
+
+  if any(pg.mouse.get_pressed()) and is_hover != -1:
+    is_hover = 2
+    entries[5] = mpx
+    entries[6] = mpy
+      
+  elif not any(pg.mouse.get_pressed()) and is_hover == 2:
+    is_hover = -1
+    pg.mouse.set_cursor(*pg.cursors.arrow)
+    entries[7] = True
+    entries[4] = time.time()
+    entries[0] = (ctrx - mpx)//5
+    entries[1] = (ctry - mpy)*2
+    entries[5] = -1
+    entries[6] = -1
+
+  return is_hover, clicked, mpx, mpy, update_render, finished

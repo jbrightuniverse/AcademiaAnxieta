@@ -359,7 +359,7 @@ async def play(websocket, pdict, is_owner):
   lasty = 0
   globalminname = None
   globalminrep = None
-  globalkcool = 0
+  globalkcool = 30
   globalitems = []
 
   while True:

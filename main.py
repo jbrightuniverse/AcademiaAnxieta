@@ -1048,10 +1048,10 @@ async def play(websocket, pdict, is_owner):
       fade()
       if pdict[myusername]["impostor"] == 1 - (winflag - 1):
         rtext(fnt(100), "Lost", actualheight//2 - 110, color = (255, 0, 0))
-        rtext(fnt(15), f"Impostors: {', '.join([pdict[p]['nickname'] for p in pdict if pdict[p]['impostor']])}", actualheight//2, color = (255, 255, 255))
+        rtext(fnt(15), f"BRCs: {', '.join([pdict[p]['nickname'] for p in pdict if pdict[p]['impostor']])}", actualheight//2, color = (255, 255, 255))
       else: 
         rtext(fnt(100), "Won", actualheight//2 - 110, color = (255, 255, 255))
-        rtext(fnt(15), f"Impostors: {', '.join([pdict[p]['nickname'] for p in pdict if pdict[p]['impostor']])}", actualheight//2, color = (255, 255, 255))
+        rtext(fnt(15), f"BRCs: {', '.join([pdict[p]['nickname'] for p in pdict if pdict[p]['impostor']])}", actualheight//2, color = (255, 255, 255))
       pg.display.flip()
       delay(3)
       if is_owner:
